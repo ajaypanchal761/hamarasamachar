@@ -1,0 +1,55 @@
+// All news categories in Hindi
+export const CATEGORIES = [
+  'ब्रेकिंग',
+  'इंटरव्यू',
+  'बाइट',
+  'क्राइम',
+  'समाचार बुलेटिन',
+  'स्पेशल बुलेटिन',
+  'प्रशासनिक',
+  'नेशनल',
+  'राजस्थान',
+  'संपादकीय',
+  'चुनाव',
+  'राजनीति',
+  'सांस्कृतिक',
+  'धार्मिक',
+  'सामाजिक',
+  'खेलकूद',
+  'शिक्षा',
+  'संगठन',
+  'मनोरंजन',
+  'फ़िल्मी दुनिया',
+  'लाइफस्टाइल',
+  'बिज़नेस',
+  'टेक्नोलॉजी'
+];
+
+// Category slugs for routing
+export const CATEGORY_SLUGS = {
+  'ब्रेकिंग': 'breaking',
+  'राजस्थान': 'rajasthan',
+  'संपादकीय': 'editorial',
+  'बाइट': 'byte',
+  'इंटरव्यू': 'interview',
+  'चुनाव': 'election',
+  'क्राइम': 'crime',
+  'राजनीति': 'politics',
+  'प्रशासनिक': 'administrative',
+  'सांस्कृतिक': 'cultural',
+  'धार्मिक': 'religious',
+  'सामाजिक': 'social',
+  'खेलकूद': 'sports',
+  'शिक्षा': 'education',
+  'संगठन': 'organization',
+  'मनोरंजन': 'entertainment',
+  'फ़िल्मी दुनिया': 'film-world',
+  'समाचार बुलेटिन': 'news-bulletin',
+  'स्पेशल बुलेटिन': 'special-bulletin',
+  'बाइट': 'special-byte',
+  'नेशनल': 'national',
+  'लाइफस्टाइल': 'lifestyle',
+  'बिज़नेस': 'business',
+  'टेक्नोलॉजी': 'technology'
+};
+
