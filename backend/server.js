@@ -67,7 +67,20 @@ connectDB();
 })();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: [
+    'https://hamarasamachar.co.in',
+    'https://hamarasamachar.co.in/',
+    'https://www.hamarasamachar.co.in',
+    // Vercel deployment URLs (add your actual Vercel URL after deployment)
+    // 'https://hamarasamachar.vercel.app',
+    // 'https://your-project-name.vercel.app',
+    // Local development
+    'http://localhost:3000',
+    'http://localhost:5173'
+  ],
+  credentials: true
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan('dev'));
