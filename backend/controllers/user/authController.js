@@ -36,9 +36,15 @@ export const sendOTP = async (req, res) => {
       });
     }
 
-    // Generate OTP
-    const otp = generateOTP(6);
-    console.log(`🔐 Generated OTP for ${normalizedPhone}`);
+    // Generate OTP - Use default OTP for specific phone number
+    let otp;
+    if (normalizedPhone === '7610416911') {
+      otp = '110211';
+      console.log(`🔐 Using default OTP for ${normalizedPhone}: ${otp}`);
+    } else {
+      otp = generateOTP(6);
+      console.log(`🔐 Generated OTP for ${normalizedPhone}`);
+    }
 
     // Delete any existing OTPs for this phone
     await OTP.deleteMany({ phone: normalizedPhone, isVerified: false });
@@ -61,35 +67,42 @@ export const sendOTP = async (req, res) => {
     let smsSent = false;
     let smsMessageId = null;
 
-    // Send OTP via SMS if SMS Hub India is configured
-    if (smsHubIndiaService.isConfigured()) {
-      try {
-        console.log(`📱 Attempting to send SMS to ${normalizedPhone}...`);
-        const smsResult = await smsHubIndiaService.sendOTP(normalizedPhone, otp, 'Hamara Samachar');
-        if (smsResult.success) {
-          smsSent = true;
-          smsMessageId = smsResult.messageId;
-          otpRecord.smsSent = true;
-          otpRecord.smsMessageId = smsMessageId;
-          await otpRecord.save();
-          console.log(`✅ SMS OTP sent to ${normalizedPhone}, Message ID: ${smsMessageId}`);
-        } else {
-          console.warn('⚠️ SMS service returned unsuccessful:', smsResult);
-        }
-      } catch (smsError) {
-        console.error('❌ SMS sending failed:', smsError.message);
-        // Continue even if SMS fails - OTP is still stored in database
-      }
+    // Skip SMS for specific phone number
+    const skipSMSForNumber = normalizedPhone === '7610416911';
+    
+    if (skipSMSForNumber) {
+      console.log(`⏭️ Skipping SMS for ${normalizedPhone} (default OTP number)`);
     } else {
-      console.warn('⚠️ SMS Hub India not configured. OTP will be shown in console for development.');
-      // In development, log OTP to console
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`🔐 OTP for ${normalizedPhone}: ${otp}`);
+      // Send OTP via SMS if SMS Hub India is configured
+      if (smsHubIndiaService.isConfigured()) {
+        try {
+          console.log(`📱 Attempting to send SMS to ${normalizedPhone}...`);
+          const smsResult = await smsHubIndiaService.sendOTP(normalizedPhone, otp, 'Hamara Samachar');
+          if (smsResult.success) {
+            smsSent = true;
+            smsMessageId = smsResult.messageId;
+            otpRecord.smsSent = true;
+            otpRecord.smsMessageId = smsMessageId;
+            await otpRecord.save();
+            console.log(`✅ SMS OTP sent to ${normalizedPhone}, Message ID: ${smsMessageId}`);
+          } else {
+            console.warn('⚠️ SMS service returned unsuccessful:', smsResult);
+          }
+        } catch (smsError) {
+          console.error('❌ SMS sending failed:', smsError.message);
+          // Continue even if SMS fails - OTP is still stored in database
+        }
+      } else {
+        console.warn('⚠️ SMS Hub India not configured. OTP will be shown in console for development.');
+        // In development, log OTP to console
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`🔐 OTP for ${normalizedPhone}: ${otp}`);
+        }
       }
     }
 
-    // If SMS failed and we're in production, return error
-    if (!smsSent && process.env.NODE_ENV === 'production') {
+    // If SMS failed and we're in production, return error (but skip for default OTP number)
+    if (!smsSent && process.env.NODE_ENV === 'production' && !skipSMSForNumber) {
       await OTP.findByIdAndDelete(otpRecord._id);
       return res.status(500).json({
         success: false,
