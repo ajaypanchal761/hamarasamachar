@@ -19,7 +19,7 @@ Backend API for Hamara Samachar news application built with Node.js, Express, an
 
 ## Installation
 
-1. Install dependencies:
+1. Install dependencies:s
 ```bash
 npm install
 ```
