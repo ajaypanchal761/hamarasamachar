@@ -41,28 +41,18 @@ const app = express();
 // Connect to MongoDB
 connectDB();
 
-// Check TEST OTP Mode status and SMS Hub India connection
+// Check SMS Hub India connection
 (async () => {
   try {
-    const { isTestOTPMode } = await import('./utils/otp.js');
-    if (isTestOTPMode()) {
-      console.log('🧪 TEST OTP MODE ENABLED: Fixed OTP (110211) - No SMS will be sent');
+    const { default: smsHubIndiaService } = await import('./services/smsHubIndiaService.js');
+    const testResult = await smsHubIndiaService.testConnection();
+    if (testResult.success) {
+      console.log(`✅ SMS Hub India Connected: ${testResult.senderId}`);
     } else {
-      // Test SMS Hub India connection (only if not in test mode)
-      try {
-        const { default: smsHubIndiaService } = await import('./services/smsHubIndiaService.js');
-        const testResult = await smsHubIndiaService.testConnection();
-        if (testResult.success) {
-          console.log(`SMS Hub India Connected: ${testResult.senderId}`);
-        } else {
-          console.warn('SMS Hub India: Configuration missing. OTP will be logged to console in development mode.');
-        }
-      } catch (smsError) {
-        console.warn('SMS Hub India: Configuration missing or invalid.');
-      }
+      console.warn('⚠️ SMS Hub India: Configuration missing. Please configure SMSINDIAHUB_API_KEY and SMSINDIAHUB_SENDER_ID in .env file.');
     }
-  } catch (error) {
-    console.warn('Error checking OTP mode:', error.message);
+  } catch (smsError) {
+    console.warn('⚠️ SMS Hub India: Configuration missing or invalid. OTP SMS will not be sent.');
   }
 })();
 

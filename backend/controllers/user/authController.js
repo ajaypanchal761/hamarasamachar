@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken';
 import User from '../../models/User.js';
 import OTP from '../../models/OTP.js';
-import { generateOTP, isTestOTPMode } from '../../utils/otp.js';
+import { generateOTP } from '../../utils/otp.js';
 import smsHubIndiaService from '../../services/smsHubIndiaService.js';
 
 // Generate JWT Token
@@ -36,15 +36,9 @@ export const sendOTP = async (req, res) => {
       });
     }
 
-    // Generate OTP (will be fixed "110211" if TEST_OTP_MODE is enabled)
+    // Generate OTP
     const otp = generateOTP(6);
-    const testMode = isTestOTPMode();
-    
-    if (testMode) {
-      console.log(`🧪 TEST MODE: Generated fixed OTP (110211) for ${normalizedPhone} - No SMS will be sent`);
-    } else {
-      console.log(`🔐 Generated OTP for ${normalizedPhone}`);
-    }
+    console.log(`🔐 Generated OTP for ${normalizedPhone}`);
 
     // Delete any existing OTPs for this phone
     await OTP.deleteMany({ phone: normalizedPhone, isVerified: false });
@@ -67,9 +61,8 @@ export const sendOTP = async (req, res) => {
     let smsSent = false;
     let smsMessageId = null;
 
-    // TEST MODE: Skip SMS sending completely
-    // PRODUCTION MODE: Send OTP via SMS if SMS Hub India is configured
-    if (!testMode && smsHubIndiaService.isConfigured()) {
+    // Send OTP via SMS if SMS Hub India is configured
+    if (smsHubIndiaService.isConfigured()) {
       try {
         console.log(`📱 Attempting to send SMS to ${normalizedPhone}...`);
         const smsResult = await smsHubIndiaService.sendOTP(normalizedPhone, otp, 'Hamara Samachar');
@@ -87,9 +80,6 @@ export const sendOTP = async (req, res) => {
         console.error('❌ SMS sending failed:', smsError.message);
         // Continue even if SMS fails - OTP is still stored in database
       }
-    } else if (testMode) {
-      // TEST MODE: Explicitly skip SMS (no attempt to send)
-      console.log('🧪 TEST MODE: SMS sending skipped - Using fixed OTP (110211)');
     } else {
       console.warn('⚠️ SMS Hub India not configured. OTP will be shown in console for development.');
       // In development, log OTP to console
@@ -98,8 +88,8 @@ export const sendOTP = async (req, res) => {
       }
     }
 
-    // If SMS failed and we're in production (and not in test mode), return error
-    if (!testMode && !smsSent && process.env.NODE_ENV === 'production') {
+    // If SMS failed and we're in production, return error
+    if (!smsSent && process.env.NODE_ENV === 'production') {
       await OTP.findByIdAndDelete(otpRecord._id);
       return res.status(500).json({
         success: false,
@@ -109,12 +99,10 @@ export const sendOTP = async (req, res) => {
 
     res.json({
       success: true,
-      message: testMode 
-        ? 'OTP generated successfully (Test Mode)' 
-        : (smsSent ? 'OTP sent successfully via SMS' : 'OTP generated successfully'),
-      method: testMode ? 'Test' : (smsSent ? 'SMS' : 'Console'),
-      // Always return OTP in test mode, or in development mode if SMS not sent
-      otp: testMode || (process.env.NODE_ENV === 'development' && !smsSent) ? otp : undefined
+      message: smsSent ? 'OTP sent successfully via SMS' : 'OTP generated successfully',
+      method: smsSent ? 'SMS' : 'Console',
+      // Return OTP only in development mode if SMS not sent
+      otp: (process.env.NODE_ENV === 'development' && !smsSent) ? otp : undefined
     });
   } catch (error) {
     console.error('❌ Send OTP error:', error);

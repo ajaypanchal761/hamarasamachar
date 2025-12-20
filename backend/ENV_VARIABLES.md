@@ -25,7 +25,6 @@ CLOUDINARY_API_SECRET=your_api_secret
 
 # OTP Configuration
 OTP_EXPIRE_MINUTES=10
-TEST_OTP_MODE=false  # Set to true for testing (uses fixed OTP: 110211)
 
 # SMS Hub India Configuration (Optional - for OTP via SMS)
 SMSINDIAHUB_API_KEY=your_sms_hub_india_api_key
@@ -58,10 +57,9 @@ ALLOWED_PDF_TYPES=pdf
 - `CLOUDINARY_API_SECRET` - Cloudinary API secret
 
 ## Optional Variables
-- `SMSINDIAHUB_API_KEY` & `SMSINDIAHUB_SENDER_ID` - For SMS OTP
+- `SMSINDIAHUB_API_KEY` & `SMSINDIAHUB_SENDER_ID` - For SMS OTP (Required for production)
 - `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_USER`, `EMAIL_PASS` - For email functionality
 - `RAZORPAY_KEY_ID` & `RAZORPAY_KEY_SECRET` - For payment processing
-- `TEST_OTP_MODE` - Set to `true` for testing (uses fixed OTP)
 
 ## Security Notes
 1. Never commit `.env` file to Git
