@@ -2,7 +2,7 @@ import { messaging, getToken, onMessage } from '../firebase.js';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5006/api';
 
-const VAPID_KEY = 'BFrFmFuypdSWCUb3rF4xnA1SjMM-QPc3_KCRrfik7niIY18PgoBrkwDdTCmR05AXtsKJS1a4Wasy7DIyNhkXJOM';
+const VAPID_KEY = 'BDxZszj5zDsoyv0oYRllDLyKwkMCVmvbwo91TTM1sH_OTz59dyydWnoRoB23RcXa43XgYEt6NTBHVx_cbtHCGlg';
 
 export const isNotificationSupported = () => {
   return (
@@ -26,9 +26,16 @@ export const requestNotificationPermission = async () => {
 };
 
 export const registerServiceWorker = async () => {
-  const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-  await navigator.serviceWorker.ready;
-  return registration;
+  try {
+    console.log('🔧 [SERVICE WORKER] Registering service worker...');
+    const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+    await navigator.serviceWorker.ready;
+    console.log('✅ [SERVICE WORKER] Service worker registered successfully');
+    return registration;
+  } catch (error) {
+    console.error('❌ [SERVICE WORKER] Failed to register service worker:', error);
+    throw error;
+  }
 };
 
 export const getFCMToken = async () => {
@@ -104,23 +111,71 @@ export const registerFCMToken = async (forceUpdate = false) => {
 };
 
 export const setupForegroundNotificationHandler = (callback) => {
-  if (!messaging) return;
+  if (!messaging) {
+    console.log('🔴 [NOTIFICATION] Firebase messaging not initialized');
+    return;
+  }
+
+  console.log('🟢 [NOTIFICATION] Setting up foreground notification handler');
 
   onMessage(messaging, (payload) => {
-    // if (Notification.permission === 'granted') {
-    //   const notification = new Notification(
-    //     payload.notification?.title || 'हमारा समाचार',
-    //     {
-    //       body: payload.notification?.body || 'नई अधिसूचना',
-    //       icon: '/favicon.png'
-    //     }
-    //   );
+    console.log('📱 [NOTIFICATION] Foreground notification received:', payload);
+    console.log('📱 [NOTIFICATION] Notification permission:', Notification.permission);
+    console.log('📱 [NOTIFICATION] Document visibility:', document.visibilityState);
 
-    //   notification.onclick = () => {
-    //     notification.close();
-    //     window.open(payload.data?.url || '/', '_blank');
-    //   };
-    // }
+    // Show browser notification when app is in foreground
+    if (Notification.permission === 'granted') {
+      console.log('🔔 [NOTIFICATION] Creating browser notification');
+
+      const notification = new Notification(
+        payload.notification?.title || 'हमारा समाचार',
+        {
+          body: payload.notification?.body || 'नई अधिसूचना',
+          icon: '/favicon.png',
+          badge: '/favicon.png',
+          data: payload.data || {},
+          tag: payload.data?.id || 'general', // Prevents duplicate notifications
+          requireInteraction: true, // Keep notification visible until user interacts
+          silent: false
+        }
+      );
+
+      notification.onclick = () => {
+        console.log('🖱️ [NOTIFICATION] Notification clicked');
+        notification.close();
+        // Handle navigation based on notification type
+        const notificationData = payload.data || {};
+        let url = '/'; // Default fallback
+
+        // Determine URL based on notification type and data
+        switch (notificationData.type) {
+          case 'breaking_news':
+          case 'new_news':
+            url = notificationData.url || `/news/${notificationData.newsId || notificationData.id}`;
+            break;
+          case 'new_epaper':
+            url = notificationData.url || '/epaper';
+            break;
+          case 'message':
+            url = notificationData.url || `/chat/${notificationData.conversationId || notificationData.userId}`;
+            break;
+          default:
+            url = notificationData.url || notificationData.link || '/';
+        }
+
+        window.open(url, '_blank');
+      };
+
+      // Auto-close notification after 10 seconds if not interacted with
+      setTimeout(() => {
+        if (notification) {
+          notification.close();
+        }
+      }, 10000);
+
+    } else {
+      console.log('🚫 [NOTIFICATION] Notification permission not granted');
+    }
 
     if (callback) callback(payload);
   });
@@ -129,19 +184,40 @@ export const setupForegroundNotificationHandler = (callback) => {
 let pushNotificationsInitialized = false;
 
 export const initializePushNotificationsAfterLogin = async () => {
-  if (pushNotificationsInitialized) return true;
-  if (!isNotificationSupported()) return false;
+  if (pushNotificationsInitialized) {
+    console.log('ℹ️ [INIT] Push notifications already initialized');
+    return true;
+  }
 
-  await registerServiceWorker();
+  console.log('🚀 [INIT] Starting push notification initialization...');
 
-  const granted = await requestNotificationPermission();
-  if (!granted) return false;
+  if (!isNotificationSupported()) {
+    console.log('🚫 [INIT] Notifications not supported in this browser');
+    return false;
+  }
 
-  const token = await registerFCMToken();
-  if (!token) return false;
+  try {
+    await registerServiceWorker();
 
-  pushNotificationsInitialized = true;
-  return true;
+    const granted = await requestNotificationPermission();
+    if (!granted) {
+      console.log('🚫 [INIT] Notification permission not granted');
+      return false;
+    }
+
+    const token = await registerFCMToken();
+    if (!token) {
+      console.log('🚫 [INIT] Failed to get FCM token');
+      return false;
+    }
+
+    pushNotificationsInitialized = true;
+    console.log('✅ [INIT] Push notifications initialized successfully');
+    return true;
+  } catch (error) {
+    console.error('❌ [INIT] Failed to initialize push notifications:', error);
+    return false;
+  }
 };
 
 export const initializePushNotifications = async () => {
@@ -170,6 +246,36 @@ export const generateNewVAPIDKey = async () => {
     .replace(/=/g, '');
 };
 
+export const testNotificationPopup = () => {
+  if (Notification.permission === 'granted') {
+    console.log('🔔 [TEST] Creating test notification');
+    const testNotification = new Notification('Test Notification', {
+      body: 'This is a test notification to verify popup functionality',
+      icon: '/favicon.png',
+      badge: '/favicon.png',
+      requireInteraction: true,
+      silent: false
+    });
+
+    testNotification.onclick = () => {
+      console.log('🖱️ [TEST] Test notification clicked');
+      testNotification.close();
+      alert('Test notification clicked successfully!');
+    };
+
+    setTimeout(() => {
+      if (testNotification) {
+        testNotification.close();
+      }
+    }, 10000);
+
+    return true;
+  } else {
+    console.log('🚫 [TEST] Notification permission not granted');
+    return false;
+  }
+};
+
 if (typeof window !== 'undefined') {
   window.testNotifications = {
     diagnose: diagnoseNotifications,
@@ -179,6 +285,8 @@ if (typeof window !== 'undefined') {
     checkServiceWorker: async () => {
       const reg = await navigator.serviceWorker.getRegistration();
       return !!reg;
-    }
+    },
+    testPopup: testNotificationPopup,
+    showTestNotification: testNotificationPopup
   };
 }

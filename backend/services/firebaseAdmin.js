@@ -148,9 +148,31 @@ const sendPushNotification = async (tokens, payload) => {
 
     // Handle failed tokens (could be expired or invalid)
     if (failureCount > 0) {
+      // Remove invalid tokens from database
+      const invalidTokens = [];
+      results.responses.forEach((response, index) => {
+        if (!response.success && response.error?.code === 'messaging/registration-token-not-registered') {
+          invalidTokens.push(uniqueTokens[index]);
+        }
+      });
 
-      // You might want to remove failed tokens from database
-      // This could be handled by a separate cleanup function
+      if (invalidTokens.length > 0) {
+        try {
+          const User = (await import('../models/User.js')).default;
+
+          // Remove each invalid token from database
+          for (const invalidToken of invalidTokens) {
+            await User.updateOne(
+              { $or: [{ fcmTokens: invalidToken }, { fcmTokenMobile: invalidToken }] },
+              { $pull: { fcmTokens: invalidToken, fcmTokenMobile: invalidToken } }
+            );
+          }
+
+          console.log(`🧹 [FIREBASE DEBUG] Removed ${invalidTokens.length} invalid FCM tokens from database`);
+        } catch (cleanupError) {
+          console.error('❌ [FIREBASE DEBUG] Error cleaning up invalid tokens:', cleanupError);
+        }
+      }
     }
 
     return results;
