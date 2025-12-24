@@ -1,11 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { sendOTP, verifyOTP } from '../services/authService';
+import { useUserAuth } from '../context/UserAuthContext';
 import { initializePushNotificationsAfterLogin } from '../../../services/push-notification.service';
 
 function OTPPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { login } = useUserAuth();
   const mobileNumber = location.state?.mobileNumber || '+916264560457';
   const redirectTo = location.state?.redirectTo || null;
 
@@ -103,8 +105,8 @@ function OTPPage() {
       const response = await verifyOTP(mobileNumber, otpString, 'registration');
 
       if (response.success) {
-        if (response.token) localStorage.setItem('userToken', response.token);
-        if (response.user) localStorage.setItem('userData', JSON.stringify(response.user));
+        // Use the auth context login method
+        await login(response.user, response.token);
 
         // Initialize push notifications after successful login
         try {

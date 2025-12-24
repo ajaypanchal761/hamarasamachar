@@ -1,6 +1,7 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import { AuthProvider } from './modules/admin/context/AuthContext';
+import { UserAuthProvider, useUserAuth } from './modules/user/context/UserAuthContext';
 import { setupForegroundNotificationHandler } from './services/push-notification.service';
 import UserHomePage from './modules/user/pages/HomePage';
 import AdminPage from './modules/admin/pages/AdminPage';
@@ -45,6 +46,98 @@ import FranchiseApplicationPage from './modules/user/pages/FranchiseApplicationP
 import JournalistTrainingPage from './modules/user/pages/JournalistTrainingPage';
 import TermsAndConditionsPage from './modules/user/pages/TermsAndConditionsPage';
 
+// AppRoutes component to handle authentication-based routing
+function AppRoutes() {
+  const { isAuthenticated, loading } = useUserAuth();
+
+  // If we have stored auth data and loading is true, redirect immediately
+  // This prevents showing the splash page for already logged-in users
+  const hasStoredAuth = localStorage.getItem('userToken') && localStorage.getItem('userData');
+
+  if (hasStoredAuth && loading) {
+    return (
+      <Routes>
+        <Route path="*" element={<Navigate to="/user" replace />} />
+      </Routes>
+    );
+  }
+
+  // Show minimal loading screen only when checking authentication for non-authenticated users
+  if (loading) {
+    return (
+      <div className="fixed inset-0 flex flex-col items-center justify-center overflow-hidden bg-white" style={{ height: '100dvh' }}>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"></div>
+      </div>
+    );
+  }
+
+  return (
+    <Routes>
+      {/* Root route - redirect based on authentication */}
+      <Route
+        path="/"
+        element={
+          isAuthenticated ? (
+            <Navigate to="/user" replace />
+          ) : (
+            <SplashPage />
+          )
+        }
+      />
+
+      {/* User Authentication Routes */}
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/otp" element={<OTPPage />} />
+      <Route path="/profile-setup" element={<ProfileSetupPage />} />
+      <Route path="/category-selection" element={<CategorySelectionPage />} />
+      <Route path="/city-selection" element={<CitySelectionPage />} />
+      <Route path="/epaper" element={<UserEpaperPage />} />
+      <Route path="/notifications" element={<NotificationPage />} />
+      <Route path="/user" element={<UserHomePage />} />
+      <Route path="/category/:categorySlug" element={<UserHomePage />} />
+      <Route path="/category/:categorySlug/:districtSlug" element={<UserHomePage />} />
+      <Route path="/news/:id" element={<NewsDetailPage />} />
+      <Route path="/profile" element={<ProfilePage />} />
+      <Route path="/shorts" element={<ShortsPage />} />
+      <Route path="/bookmarks" element={<BookmarkNewsPage />} />
+      <Route path="/rate-app" element={<RateAppPage />} />
+      <Route path="/feedback" element={<FeedbackPage />} />
+      <Route path="/about" element={<AboutPage />} />
+      <Route path="/contact" element={<ContactPage />} />
+      <Route path="/franchise" element={<FranchisePage />} />
+      <Route path="/franchise/apply" element={<FranchiseApplicationPage />} />
+      <Route path="/journalist-training" element={<JournalistTrainingPage />} />
+      <Route path="/terms-and-conditions" element={<TermsAndConditionsPage />} />
+
+      {/* Admin Routes */}
+      <Route path="/admin" element={<AdminPage />} />
+      <Route path="/admin/login" element={<AdminLoginPage />} />
+      <Route path="/admin/dashboard" element={<AdminDashboard />} />
+      <Route path="/admin/profile" element={<AdminProfilePage />} />
+      <Route path="/admin/access-denied" element={<AccessDeniedPage />} />
+      <Route path="/admin/news" element={<NewsListPage />} />
+      <Route path="/admin/news/create" element={<NewsFormPage />} />
+      <Route path="/admin/news/edit/:id" element={<NewsFormPage />} />
+      <Route path="/admin/news/view/:id" element={<NewsDetailViewPage />} />
+      <Route path="/admin/categories" element={<CategoryListPage />} />
+      <Route path="/admin/categories/add" element={<CategoryFormPage />} />
+      <Route path="/admin/categories/edit/:id" element={<CategoryFormPage />} />
+      <Route path="/admin/banners" element={<BannerListPage />} />
+      <Route path="/admin/banners/add" element={<BannerFormPage />} />
+      <Route path="/admin/banners/edit/:id" element={<BannerFormPage />} />
+      <Route path="/admin/feedback" element={<FeedbackListPage />} />
+      <Route path="/admin/ratings" element={<RatingsPage />} />
+      <Route path="/admin/users" element={<UserListPage />} />
+      <Route path="/admin/users/edit/:id" element={<UserEditPage />} />
+      <Route path="/admin/users/:id" element={<UserDetailsPage />} />
+      <Route path="/admin/epaper" element={<EpaperPage />} />
+      <Route path="/admin/plans" element={<SubscriptionPlansPage />} />
+      <Route path="/admin/franchise-leads" element={<FranchiseLeadsPage />} />
+      <Route path="/admin/training-leads" element={<JournalistTrainingLeadsPage />} />
+    </Routes>
+  );
+}
+
 function App() {
   useEffect(() => {
     // Setup foreground notification handler (runs on app load, no auth required)
@@ -54,122 +147,12 @@ function App() {
     });
   }, []);
 
-  // Token validation on app startup (PWA persistence fix)
-  useEffect(() => {
-    const validateAuthState = async () => {
-      try {
-        const token = localStorage.getItem('userToken');
-        const userData = localStorage.getItem('userData');
-
-        // Only validate if we have stored auth data
-        if (token && userData) {
-          console.log('🔍 Validating stored authentication token...');
-
-          const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5006/api';
-
-          const response = await fetch(`${API_BASE_URL}/user/auth/me`, {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            }
-          });
-
-          if (response.status === 401) {
-            // Token is invalid/expired - clear stored data
-            console.log('⚠️ Stored token is invalid, clearing authentication data');
-            localStorage.removeItem('userToken');
-            localStorage.removeItem('userData');
-
-            // Optional: Could redirect to login, but let's keep it non-disruptive
-            // Users will be prompted to login when they try to access protected content
-          } else if (response.ok) {
-            console.log('✅ Stored token is valid');
-          } else {
-            console.warn('⚠️ Token validation failed with status:', response.status);
-          }
-        }
-      } catch (error) {
-        // Network errors or other issues - don't clear tokens, let app handle gracefully
-        console.error('❌ Auth validation error (keeping existing tokens):', error.message);
-        // Don't clear tokens on network errors to avoid unnecessary logouts
-      }
-    };
-
-    // Run validation on app startup
-    validateAuthState();
-
-    // Also validate when app becomes visible (user returns to PWA)
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        console.log('📱 App became visible, re-validating auth...');
-        validateAuthState();
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    // Cleanup
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, []);
-
   return (
     <Router>
       <AuthProvider>
-        <Routes>
-          {/* Onboarding Routes */}
-          <Route path="/" element={<SplashPage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/otp" element={<OTPPage />} />
-          <Route path="/profile-setup" element={<ProfileSetupPage />} />
-          <Route path="/category-selection" element={<CategorySelectionPage />} />
-          <Route path="/city-selection" element={<CitySelectionPage />} />
-          <Route path="/epaper" element={<UserEpaperPage />} />
-          <Route path="/notifications" element={<NotificationPage />} />
-          <Route path="/user" element={<UserHomePage />} />
-          <Route path="/category/:categorySlug" element={<UserHomePage />} />
-          <Route path="/category/:categorySlug/:districtSlug" element={<UserHomePage />} />
-          <Route path="/news/:id" element={<NewsDetailPage />} />
-          <Route path="/profile" element={<ProfilePage />} />
-          <Route path="/shorts" element={<ShortsPage />} />
-          <Route path="/bookmarks" element={<BookmarkNewsPage />} />
-          <Route path="/rate-app" element={<RateAppPage />} />
-          <Route path="/feedback" element={<FeedbackPage />} />
-          <Route path="/about" element={<AboutPage />} />
-          <Route path="/contact" element={<ContactPage />} />
-          <Route path="/franchise" element={<FranchisePage />} />
-          <Route path="/franchise/apply" element={<FranchiseApplicationPage />} />
-          <Route path="/journalist-training" element={<JournalistTrainingPage />} />
-          <Route path="/terms-and-conditions" element={<TermsAndConditionsPage />} />
-
-          {/* Admin Routes */}
-          <Route path="/admin" element={<AdminPage />} />
-          <Route path="/admin/login" element={<AdminLoginPage />} />
-          <Route path="/admin/dashboard" element={<AdminDashboard />} />
-          <Route path="/admin/profile" element={<AdminProfilePage />} />
-          <Route path="/admin/access-denied" element={<AccessDeniedPage />} />
-          <Route path="/admin/news" element={<NewsListPage />} />
-          <Route path="/admin/news/create" element={<NewsFormPage />} />
-          <Route path="/admin/news/edit/:id" element={<NewsFormPage />} />
-          <Route path="/admin/news/view/:id" element={<NewsDetailViewPage />} />
-          <Route path="/admin/categories" element={<CategoryListPage />} />
-          <Route path="/admin/categories/add" element={<CategoryFormPage />} />
-          <Route path="/admin/categories/edit/:id" element={<CategoryFormPage />} />
-          <Route path="/admin/banners" element={<BannerListPage />} />
-          <Route path="/admin/banners/add" element={<BannerFormPage />} />
-          <Route path="/admin/banners/edit/:id" element={<BannerFormPage />} />
-          <Route path="/admin/feedback" element={<FeedbackListPage />} />
-          <Route path="/admin/ratings" element={<RatingsPage />} />
-          <Route path="/admin/users" element={<UserListPage />} />
-          <Route path="/admin/users/edit/:id" element={<UserEditPage />} />
-          <Route path="/admin/users/:id" element={<UserDetailsPage />} />
-          <Route path="/admin/epaper" element={<EpaperPage />} />
-          <Route path="/admin/plans" element={<SubscriptionPlansPage />} />
-          <Route path="/admin/franchise-leads" element={<FranchiseLeadsPage />} />
-          <Route path="/admin/training-leads" element={<JournalistTrainingLeadsPage />} />
-        </Routes>
+        <UserAuthProvider>
+          <AppRoutes />
+        </UserAuthProvider>
       </AuthProvider>
     </Router>
   );

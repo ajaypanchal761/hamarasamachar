@@ -1,12 +1,20 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useUserAuth } from '../context/UserAuthContext';
 import logo from '../assets/samachar-logo.png';
 
 function SplashPage() {
   const navigate = useNavigate();
+  const { isAuthenticated, loading } = useUserAuth();
   const [showContent, setShowContent] = useState(false);
 
   useEffect(() => {
+    // Check if user is already authenticated and redirect to home
+    if (!loading && isAuthenticated) {
+      navigate('/user', { replace: true });
+      return;
+    }
+
     // Prevent body scroll on mount
     document.body.style.overflow = 'hidden';
     document.body.style.position = 'fixed';
@@ -25,7 +33,7 @@ function SplashPage() {
       document.body.style.width = '';
       document.body.style.height = '';
     };
-  }, []);
+  }, [isAuthenticated, loading, navigate]);
 
   return (
     <div className="fixed inset-0 flex flex-col items-center justify-center overflow-hidden bg-white" style={{ height: '100dvh' }}>
