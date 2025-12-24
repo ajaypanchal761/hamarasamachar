@@ -122,6 +122,16 @@ const userSchema = new mongoose.Schema({
     expiryDate: {
       type: Date
     }
+  },
+  // FCM Tokens for push notifications (Web tokens)
+  fcmTokens: {
+    type: [String],
+    default: [],
+  },
+  // FCM Token for Mobile/APK (Android/iOS)
+  fcmTokenMobile: {
+    type: [String],
+    default: [],
   }
 }, {
   timestamps: true

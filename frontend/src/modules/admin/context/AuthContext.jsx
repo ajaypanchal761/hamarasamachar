@@ -27,7 +27,6 @@ export const AuthProvider = ({ children }) => {
             }
           } catch (error) {
             // API call failed, clear storage
-            console.warn('Failed to verify admin token:', error);
             authService.logout();
             setAdmin(null);
           }

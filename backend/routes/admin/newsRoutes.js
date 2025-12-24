@@ -12,8 +12,6 @@ import { uploadMedia } from '../../middlewares/upload.js';
 
 const router = express.Router();
 
-router.use(adminAuth);
-
 router.get('/', getAllNews);
 router.get('/:id', getNewsById);
 router.post('/', uploadMedia.single('media'), createNews);

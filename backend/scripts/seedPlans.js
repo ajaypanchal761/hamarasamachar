@@ -28,27 +28,22 @@ const defaultPlans = [
 const seedPlans = async () => {
   try {
     await mongoose.connect(process.env.MONGODB_URI);
-    console.log('MongoDB Connected...');
 
     // Check if plans already exist
     const existingPlans = await Plan.countDocuments();
     
     if (existingPlans > 0) {
-      console.log(`Found ${existingPlans} existing plans. Skipping seed.`);
-      console.log('To reset plans, delete all plans first.');
       mongoose.disconnect();
       return;
     }
 
     // Insert default plans
     const plans = await Plan.insertMany(defaultPlans);
-    console.log(`✅ Seeded ${plans.length} plans:`);
     plans.forEach(plan => {
-      console.log(`  - ${plan.name} (${plan.billingCycle}): ₹${plan.price}`);
+      console.log(`✅ Plan seeded: ${plan.name} - ₹${plan.price}`);
     });
 
     mongoose.disconnect();
-    console.log('✅ Plans seeding completed!');
   } catch (error) {
     console.error('❌ Error seeding plans:', error);
     mongoose.disconnect();
@@ -57,4 +52,3 @@ const seedPlans = async () => {
 };
 
 seedPlans();
-

@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import News from '../../models/News.js';
 import Category from '../../models/Category.js';
 import { uploadToCloudinary, deleteFromCloudinary } from '../../utils/cloudinaryUpload.js';
+import { sendBreakingNewsNotification, sendNewNewsNotification, sendCategoryBasedNotification } from '../../services/pushNotificationService.js';
 
 // @desc    Get all news
 // @route   GET /api/admin/news
@@ -185,16 +186,51 @@ export const createNews = async (req, res) => {
       videoUrl: uploadedVideoUrl || videoUrl || '',
       isBreakingNews: isBreakingNews === 'true' || isBreakingNews === true,
       content,
-      author: author || req.admin.name,
+      author: author || (req.admin ? req.admin.name : 'System'),
       publishDate: publishDate || new Date(),
       status: status || 'draft',
       metaDescription: metaDescription || '',
       tags: tagsArray,
-      createdBy: req.admin._id
+      createdBy: req.admin ? req.admin._id : null
     });
 
     // Update category news count
     await Category.findByIdAndUpdate(categoryId, { $inc: { newsCount: 1 } });
+
+    // Send push notifications if news is published
+    if (news.status === 'published') {
+      try {
+        // Populate category info for notifications
+        await news.populate('category', 'name slug');
+        if (news.isBreakingNews) {
+          // Send breaking news notification to all users
+          await sendBreakingNewsNotification({
+            _id: news._id,
+            title: news.title,
+            category: news.category?.slug || '',
+          });
+          } else {
+          // Send new news notification to all users
+          await sendNewNewsNotification({
+            _id: news._id,
+            title: news.title,
+            category: news.category?.slug || '',
+            district: news.district || '',
+          });
+          // Send category-based notification to users interested in this category
+          // await sendCategoryBasedNotification({
+          //   _id: news._id,
+          //   title: news.title,
+          //   categorySlug: news.category?.slug || '',
+          //   district: news.district || '',
+          // });
+          }
+      } catch (notificationError) {
+        console.error('❌ [NEWS DEBUG] Error sending news notification:', notificationError);
+        // Don't fail the news creation if notification fails
+      }
+    } else {
+      }
 
     res.status(201).json({
       success: true,
@@ -324,7 +360,44 @@ export const updateNews = async (req, res) => {
       news.tags = tagsArray;
     }
 
+    // Check if status changed to published
+    const oldStatus = news.status;
     await news.save();
+
+    // Send push notifications if news status changed to published
+    if (oldStatus !== 'published' && news.status === 'published') {
+      try {
+        // Populate category info for notifications
+        await news.populate('category', 'name slug');
+        if (news.isBreakingNews) {
+          // Send breaking news notification to all users
+          await sendBreakingNewsNotification({
+            _id: news._id,
+            title: news.title,
+            category: news.category?.slug || '',
+          });
+          } else {
+          // Send new news notification to all users
+          await sendNewNewsNotification({
+            _id: news._id,
+            title: news.title,
+            category: news.category?.slug || '',
+            district: news.district || '',
+          });
+          // Send category-based notification to users interested in this category
+          await sendCategoryBasedNotification({
+            _id: news._id,
+            title: news.title,
+            categorySlug: news.category?.slug || '',
+            district: news.district || '',
+          });
+          }
+      } catch (notificationError) {
+        console.error('❌ [NEWS UPDATE DEBUG] Error sending news notification:', notificationError);
+        // Don't fail the news update if notification fails
+      }
+    } else {
+      }
 
     res.json({
       success: true,

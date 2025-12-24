@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { getNewsById as fetchNewsById } from '../services/newsService';
 import BottomNavbar from '../components/BottomNavbar';
 import ContentSection from '../components/ContentSection';
+import LazyImage from '../../../components/LazyImage';
+import LazyVideo from '../../../components/LazyVideo';
 
 function NewsDetailPage() {
   const { id } = useParams();
@@ -177,6 +179,18 @@ function NewsDetailPage() {
   const afterColon = hasColon ? news?.title.substring(colonIndex + 1).trim() : '';
 
   const handleShare = () => {
+    const token = localStorage.getItem('userToken');
+    if (!token) {
+      // Redirect to login with message
+      navigate('/login', { 
+        state: { 
+          message: 'समाचार शेयर करने के लिए कृपया लॉगिन करें या साइन अप करें',
+          redirectTo: window.location.pathname
+        } 
+      });
+      return;
+    }
+
     if (navigator.share) {
       navigator.share({
         title: news?.title,
@@ -533,7 +547,7 @@ function NewsDetailPage() {
             >
               {news.type === 'video' && news.videoUrl ? (
                 <>
-                  <video
+                  <LazyVideo
                     ref={videoRef}
                     src={news.videoUrl}
                     className="w-full h-full object-cover"
@@ -543,7 +557,7 @@ function NewsDetailPage() {
                     playsInline
                     preload="auto"
                     style={{ pointerEvents: 'none' }}
-                    onLoadedMetadata={() => {
+                    onLoad={() => {
                       if (videoRef.current) {
                         videoRef.current.playbackRate = 2.0;
                         const actualDuration = videoRef.current.duration;
@@ -560,14 +574,11 @@ function NewsDetailPage() {
                   )}
                 </>
               ) : news.image ? (
-                <img
+                <LazyImage
                   src={news.image}
                   alt={news.title}
                   className="w-full h-full object-cover"
-                  onError={(e) => {
-                    e.target.src = 'https://picsum.photos/800/400?random=' + news.id;
-                  }}
-                  loading="lazy"
+                  errorSrc={'https://picsum.photos/800/400?random=' + news.id}
                 />
               ) : (
                 <div className="w-full h-full bg-gray-200 flex items-center justify-center">

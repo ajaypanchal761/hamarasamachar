@@ -37,6 +37,20 @@ function FranchiseApplicationPage() {
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
+    
+    // Check authentication first
+    const token = localStorage.getItem('userToken');
+    if (!token) {
+      alert('पहले लॉगिन करें');
+      navigate('/login', { 
+        state: { 
+          message: 'फ्रेंचाइजी आवेदन भेजने के लिए कृपया लॉगिन करें या साइन अप करें',
+          redirectTo: '/franchise/apply'
+        } 
+      });
+      return;
+    }
+
     const { name, phone, address } = formData;
     if (!name.trim() || !phone.trim() || !address.trim()) {
       setSubmitMessage('कृपया सभी फ़ील्ड भरें');

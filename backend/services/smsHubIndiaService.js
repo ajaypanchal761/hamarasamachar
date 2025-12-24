@@ -15,8 +15,7 @@ class SMSHubIndiaService {
     this.appName = 'Hamara Samachar';
 
     if (!this.apiKey || !this.senderId) {
-      console.warn('⚠️  SMS Hub India credentials not configured. SMS functionality will be disabled.');
-    }
+      }
   }
 
   /**
@@ -99,8 +98,6 @@ class SMSHubIndiaService {
       });
 
       const apiUrl = `${this.baseUrl}?${params.toString()}`;
-      console.log(`📱 Sending SMS to ${normalizedPhone} via SMS Hub India...`);
-
       // Make GET request to SMS Hub India API
       const response = await axios.get(apiUrl, {
         headers: {
@@ -109,9 +106,6 @@ class SMSHubIndiaService {
         },
         timeout: 15000 // 15 second timeout
       });
-
-      console.log('📱 SMS Hub India Response Status:', response.status);
-      console.log('📱 SMS Hub India Response Data:', response.data);
 
       // SMS Hub India returns JSON response
       let responseData = response.data;

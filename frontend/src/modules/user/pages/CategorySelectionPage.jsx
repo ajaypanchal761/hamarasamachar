@@ -17,42 +17,76 @@ function CategorySelectionPage() {
     document.body.style.width = '100%';
     document.body.style.height = '100%';
 
+    // Check authentication for edit mode (when coming from profile page)
+    if (isEditMode) {
+      const token = localStorage.getItem('userToken');
+      if (!token) {
+        // Redirect to login with message
+        navigate('/login', { 
+          state: { 
+            message: 'पसंदीदा रुचि देखने और संपादित करने के लिए कृपया लॉगिन करें या साइन अप करें',
+            redirectTo: '/category-selection'
+          } 
+        });
+        return;
+      }
+    }
+
     // Load saved categories from backend or localStorage
     const loadCategories = async () => {
       try {
         const token = localStorage.getItem('userToken');
         if (token) {
-          const user = await getCurrentUser();
-          if (user) {
-            // Check if profile is already complete (only redirect if NOT in edit mode)
-            // When coming from profile page (editMode=true), don't redirect
-            if (!isEditMode && user.gender && user.gender !== '' && user.selectedCategory) {
-              // Profile already complete, redirect to home (only during first-time setup)
-              navigate('/category/breaking');
-              return;
-            }
-            
-            // In edit mode, always allow user to see and edit categories
+          try {
+            const user = await getCurrentUser();
+            if (user) {
+              // Check if profile is already complete (only redirect if NOT in edit mode)
+              // When coming from profile page (editMode=true), don't redirect
+              if (!isEditMode && user.gender && user.gender !== '' && user.selectedCategory) {
+                // Profile already complete, redirect to home (only during first-time setup)
+                navigate('/category/breaking');
+                return;
+              }
+              
+              // In edit mode, always allow user to see and edit categories
 
-            // Load categories from backend - check selectedCategories array first, then fallback to selectedCategory
-            if (user.selectedCategories && Array.isArray(user.selectedCategories) && user.selectedCategories.length > 0) {
-              setSelectedCategories(user.selectedCategories);
-              return;
-            } else if (user.selectedCategory) {
-              // Fallback to single selectedCategory for backward compatibility
-              setSelectedCategories([user.selectedCategory]);
+              // Load categories from backend - check selectedCategories array first, then fallback to selectedCategory
+              if (user.selectedCategories && Array.isArray(user.selectedCategories) && user.selectedCategories.length > 0) {
+                setSelectedCategories(user.selectedCategories);
+                return;
+              } else if (user.selectedCategory) {
+                // Fallback to single selectedCategory for backward compatibility
+                setSelectedCategories([user.selectedCategory]);
+                return;
+              }
+            }
+          } catch (authError) {
+            // If authentication fails in edit mode, redirect to login
+            if (isEditMode) {
+              localStorage.removeItem('userToken');
+              localStorage.removeItem('userData');
+              navigate('/login', { 
+                state: { 
+                  message: 'पसंदीदा रुचि देखने और संपादित करने के लिए कृपया लॉगिन करें या साइन अप करें',
+                  redirectTo: '/category-selection'
+                } 
+              });
               return;
             }
+            // In first-time setup, continue without backend data
+            console.error('Error loading categories from backend:', authError);
           }
         }
       } catch (error) {
-        console.error('Error loading categories from backend:', error);
+        console.error('Error loading categories:', error);
       }
 
-      // Fallback to localStorage
-      const savedCategories = localStorage.getItem('userCategories');
-      if (savedCategories) {
-        setSelectedCategories(JSON.parse(savedCategories));
+      // Fallback to localStorage (only for first-time setup, not edit mode)
+      if (!isEditMode) {
+        const savedCategories = localStorage.getItem('userCategories');
+        if (savedCategories) {
+          setSelectedCategories(JSON.parse(savedCategories));
+        }
       }
     };
 
@@ -122,8 +156,29 @@ function CategorySelectionPage() {
           });
         } catch (apiError) {
           console.error('Backend update failed:', apiError);
-          // Continue even if backend fails
+          // If unauthorized, redirect to login
+          if (apiError.message && (apiError.message.includes('authenticated') || apiError.message.includes('authorization') || apiError.message.includes('token'))) {
+            localStorage.removeItem('userToken');
+            localStorage.removeItem('userData');
+            navigate('/login', { 
+              state: { 
+                message: 'पसंदीदा रुचि सेव करने के लिए कृपया लॉगिन करें या साइन अप करें',
+                redirectTo: '/category-selection'
+              } 
+            });
+            return;
+          }
+          // Continue even if backend fails for other errors
         }
+      } else if (isEditMode) {
+        // In edit mode, require authentication
+        navigate('/login', { 
+          state: { 
+            message: 'पसंदीदा रुचि सेव करने के लिए कृपया लॉगिन करें या साइन अप करें',
+            redirectTo: '/category-selection'
+          } 
+        });
+        return;
       }
 
       // Navigate based on mode

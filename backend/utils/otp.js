@@ -2,7 +2,7 @@ import otpGenerator from 'otp-generator';
 
 /**
  * Generate OTP
- * Generates random OTP for user authentication
+ * Generates a random OTP for SMS authentication
  * @param {number} length - Length of OTP (default: 6)
  * @returns {string} - Generated OTP
  */

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BottomNavbar from '../components/BottomNavbar';
-import { getCurrentUser, deleteAccount } from '../services/authService';
+import { getCurrentUser, updateProfile, deleteAccount } from '../services/authService';
 import './ProfilePage.css';
 
 function ProfilePage() {
@@ -13,6 +13,14 @@ function ProfilePage() {
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showNotificationSettings, setShowNotificationSettings] = useState(false);
+  const [notificationSettings, setNotificationSettings] = useState({
+    pushNotifications: true,
+    breakingNews: true,
+    localNews: true,
+    sportsNews: true,
+    entertainmentNews: true
+  });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -21,11 +29,23 @@ function ProfilePage() {
   }, []);
 
   useEffect(() => {
+    // Check authentication first
+    const token = localStorage.getItem('userToken');
+    if (!token) {
+      // Redirect to login with message
+      navigate('/login', { 
+        state: { 
+          message: 'प्रोफाइल देखने के लिए कृपया लॉगिन करें या साइन अप करें',
+          redirectTo: '/profile'
+        } 
+      });
+      return;
+    }
+
     // Load user data from backend first, then fallback to localStorage
     const loadUserData = async () => {
       setLoading(true);
       try {
-        const token = localStorage.getItem('userToken');
         
         if (token) {
           // Try to load from backend
@@ -66,7 +86,18 @@ function ProfilePage() {
               setSelectedCategories([user.selectedCategory]);
               localStorage.setItem('userCategories', JSON.stringify([user.selectedCategory]));
             }
-            
+
+            // Set notification settings from backend
+            if (user.notificationSettings) {
+              setNotificationSettings({
+                pushNotifications: user.notificationSettings.pushNotifications ?? true,
+                breakingNews: user.notificationSettings.breakingNews ?? true,
+                localNews: user.notificationSettings.localNews ?? true,
+                sportsNews: user.notificationSettings.sportsNews ?? true,
+                entertainmentNews: user.notificationSettings.entertainmentNews ?? true
+              });
+            }
+
             setLoading(false);
             return;
           }
@@ -156,7 +187,19 @@ function ProfilePage() {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
         </svg>
       ),
-      action: () => navigate('/city-selection')
+      action: () => {
+        const token = localStorage.getItem('userToken');
+        if (!token) {
+          navigate('/login', { 
+            state: { 
+              message: 'शहर चुनने के लिए कृपया लॉगिन करें या साइन अप करें',
+              redirectTo: '/city-selection'
+            } 
+          });
+          return;
+        }
+        navigate('/city-selection');
+      }
     },
     {
       id: 'topics',
@@ -166,7 +209,19 @@ function ProfilePage() {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
         </svg>
       ),
-      action: () => navigate('/category-selection', { state: { editMode: true } })
+      action: () => {
+        const token = localStorage.getItem('userToken');
+        if (!token) {
+          navigate('/login', { 
+            state: { 
+              message: 'पसंदीदा रुचि देखने के लिए कृपया लॉगिन करें या साइन अप करें',
+              redirectTo: '/category-selection'
+            } 
+          });
+          return;
+        }
+        navigate('/category-selection', { state: { editMode: true } });
+      }
     },
     {
       id: 'about',
@@ -206,7 +261,19 @@ function ProfilePage() {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
         </svg>
       ),
-      action: () => navigate('/bookmarks')
+      action: () => {
+        const token = localStorage.getItem('userToken');
+        if (!token) {
+          navigate('/login', { 
+            state: { 
+              message: 'बुकमार्क न्यूज़ देखने के लिए कृपया लॉगिन करें या साइन अप करें',
+              redirectTo: '/bookmarks'
+            } 
+          });
+          return;
+        }
+        navigate('/bookmarks');
+      }
     },
     {
       id: 'notifications',
@@ -217,7 +284,7 @@ function ProfilePage() {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
         </svg>
       ),
-      action: () => console.log('Notifications clicked')
+      action: () => setShowNotificationSettings(true)
     },
     {
       id: 'rate',
@@ -298,7 +365,7 @@ function ProfilePage() {
   const handleDeleteConfirm = async () => {
     try {
       const token = localStorage.getItem('userToken');
-      
+
       if (token) {
         // Call backend API to delete account
         await deleteAccount();
@@ -308,13 +375,30 @@ function ProfilePage() {
         localStorage.removeItem('userToken');
         localStorage.removeItem('userData');
       }
-      
+
       setShowDeleteConfirm(false);
       navigate('/login');
     } catch (error) {
       console.error('Error deleting account:', error);
       alert(error.message || 'खाता हटाने में समस्या हुई। कृपया पुनः प्रयास करें।');
       setShowDeleteConfirm(false);
+    }
+  };
+
+  const handleNotificationToggle = async (settingKey) => {
+    const newSettings = {
+      ...notificationSettings,
+      [settingKey]: !notificationSettings[settingKey]
+    };
+    setNotificationSettings(newSettings);
+
+    try {
+      await updateProfile({ notificationSettings: newSettings });
+    } catch (error) {
+      console.error('Error saving notification settings:', error);
+      // Revert on error
+      setNotificationSettings(notificationSettings);
+      alert('नोटिफिकेशन सेटिंग्स सेव करने में समस्या हुई। कृपया पुनः प्रयास करें।');
     }
   };
 
@@ -519,6 +603,123 @@ function ProfilePage() {
                 className="flex-1 py-2 sm:py-2.5 px-4 rounded-lg bg-white text-red-600 font-medium hover:bg-gray-100 transition-colors text-sm sm:text-base"
               >
                 हटाएं
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Notification Settings Modal */}
+      {showNotificationSettings && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-4 sm:p-5 transform transition-all scale-100 animate-slide-up">
+            <div className="flex items-center justify-between mb-4 sm:mb-5">
+              <h3 className="text-lg sm:text-xl font-bold text-gray-900">
+                नोटिफिकेशन सेटिंग्स
+              </h3>
+              <button
+                onClick={() => setShowNotificationSettings(false)}
+                className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="space-y-4 sm:space-y-5">
+              {/* Push Notifications */}
+              <div className="flex items-center justify-between py-3">
+                <div className="flex-1">
+                  <h4 className="text-sm sm:text-base font-semibold text-gray-900">पुश नोटिफिकेशन</h4>
+                  <p className="text-xs sm:text-sm text-gray-500">ब्राउज़र में नोटिफिकेशन प्राप्त करें</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={notificationSettings.pushNotifications}
+                    onChange={() => handleNotificationToggle('pushNotifications')}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#E21E26]/25 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#E21E26]"></div>
+                </label>
+              </div>
+
+              {/* Breaking News */}
+              <div className="flex items-center justify-between py-3">
+                <div className="flex-1">
+                  <h4 className="text-sm sm:text-base font-semibold text-gray-900">ब्रेकिंग न्यूज़</h4>
+                  <p className="text-xs sm:text-sm text-gray-500">महत्वपूर्ण समाचार के लिए नोटिफिकेशन</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={notificationSettings.breakingNews}
+                    onChange={() => handleNotificationToggle('breakingNews')}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#E21E26]/25 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#E21E26]"></div>
+                </label>
+              </div>
+
+              {/* Local News */}
+              <div className="flex items-center justify-between py-3">
+                <div className="flex-1">
+                  <h4 className="text-sm sm:text-base font-semibold text-gray-900">स्थानीय समाचार</h4>
+                  <p className="text-xs sm:text-sm text-gray-500">आपके शहर के समाचार</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={notificationSettings.localNews}
+                    onChange={() => handleNotificationToggle('localNews')}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#E21E26]/25 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#E21E26]"></div>
+                </label>
+              </div>
+
+              {/* Sports News */}
+              <div className="flex items-center justify-between py-3">
+                <div className="flex-1">
+                  <h4 className="text-sm sm:text-base font-semibold text-gray-900">खेल समाचार</h4>
+                  <p className="text-xs sm:text-sm text-gray-500">खेल से संबंधित अपडेट</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={notificationSettings.sportsNews}
+                    onChange={() => handleNotificationToggle('sportsNews')}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#E21E26]/25 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#E21E26]"></div>
+                </label>
+              </div>
+
+              {/* Entertainment News */}
+              <div className="flex items-center justify-between py-3">
+                <div className="flex-1">
+                  <h4 className="text-sm sm:text-base font-semibold text-gray-900">मनोरंजन समाचार</h4>
+                  <p className="text-xs sm:text-sm text-gray-500">फिल्म, टीवी और मनोरंजन अपडेट</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={notificationSettings.entertainmentNews}
+                    onChange={() => handleNotificationToggle('entertainmentNews')}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#E21E26]/25 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#E21E26]"></div>
+                </label>
+              </div>
+            </div>
+
+            <div className="mt-6 sm:mt-8">
+              <button
+                onClick={() => setShowNotificationSettings(false)}
+                className="w-full py-3 px-4 bg-[#E21E26] text-white font-semibold rounded-xl hover:bg-[#c21a20] transition-colors"
+              >
+                ठीक है
               </button>
             </div>
           </div>

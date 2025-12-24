@@ -36,6 +36,20 @@ function JournalistTrainingPage() {
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
+    
+    // Check authentication first
+    const token = localStorage.getItem('userToken');
+    if (!token) {
+      alert('पहले लॉगिन करें');
+      navigate('/login', { 
+        state: { 
+          message: 'जर्नलिस्ट प्रशिक्षण आवेदन भेजने के लिए कृपया लॉगिन करें या साइन अप करें',
+          redirectTo: '/journalist-training'
+        } 
+      });
+      return;
+    }
+
     const { name, phone, address, qualification, age } = formData;
     if (!name.trim() || !phone.trim() || !address.trim() || !qualification.trim() || !age.trim()) {
       setSubmitMessage('कृपया सभी फ़ील्ड भरें');

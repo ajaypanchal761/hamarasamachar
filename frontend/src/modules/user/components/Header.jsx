@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import LazyImage from '../../../components/LazyImage';
 import logo from '../assets/samachar-logo.png';
 
 function Header() {
@@ -20,7 +21,7 @@ function Header() {
       <div className="flex items-center justify-between px-3 sm:px-4 md:px-5 py-2 sm:py-2.5">
         {/* Left Logo Container */}
         <div className="flex-shrink-0 h-10 sm:h-12 md:h-14 w-28 sm:w-36 overflow-visible flex items-center">
-          <img
+          <LazyImage
             src={logo}
             alt="हमारा समाचार Logo"
             className="h-full w-auto object-contain"

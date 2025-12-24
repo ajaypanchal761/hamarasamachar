@@ -4,7 +4,7 @@ import Category from '../models/Category.js';
 
 dotenv.config();
 
-// Hindi to English slug mapping (same as in Category model)
+// Hindi to English slug mapping
 const HINDI_TO_SLUG_MAP = {
   'ब्रेकिंग': 'breaking',
   'ब्रेकिंग न्यूज़': 'breaking-news',
@@ -39,13 +39,11 @@ function generateSlug(name) {
   }
 
   const trimmedName = name.trim();
-  
-  // Check if we have a direct mapping
+
   if (HINDI_TO_SLUG_MAP[trimmedName]) {
     return HINDI_TO_SLUG_MAP[trimmedName];
   }
 
-  // Try to generate slug from name
   let slug = trimmedName
     .toLowerCase()
     .replace(/[^\w\s-]/g, '')
@@ -53,14 +51,13 @@ function generateSlug(name) {
     .replace(/-+/g, '-')
     .trim();
 
-  // If slug is empty after processing, use fallback
   if (!slug || slug.length === 0) {
     const fallback = trimmedName
       .substring(0, 10)
       .toLowerCase()
       .replace(/[^\w]/g, '');
-    
-    slug = fallback && fallback.length > 0 
+
+    slug = fallback && fallback.length > 0
       ? `${fallback}-${Date.now().toString().slice(-6)}`
       : `category-${Date.now()}`;
   }
@@ -70,10 +67,8 @@ function generateSlug(name) {
 
 async function fixCategorySlugs() {
   try {
-    console.log('🔌 Connecting to database...');
     await connectDB();
-    
-    console.log('🔍 Finding categories with empty or missing slugs...');
+
     const categories = await Category.find({
       $or: [
         { slug: { $exists: false } },
@@ -83,45 +78,37 @@ async function fixCategorySlugs() {
     });
 
     if (categories.length === 0) {
-      console.log('✅ No categories with empty slugs found!');
       process.exit(0);
     }
 
-    console.log(`📝 Found ${categories.length} category(ies) to fix:`);
-    
     for (const category of categories) {
-      console.log(`\n  - ${category.name} (ID: ${category._id})`);
-      
       let baseSlug = generateSlug(category.name);
       let slug = baseSlug;
       let counter = 1;
-      
-      // Check for duplicates
-      let existingCategory = await Category.findOne({ 
+
+      let existingCategory = await Category.findOne({
         slug,
         _id: { $ne: category._id }
       });
-      
+
       while (existingCategory) {
         slug = `${baseSlug}-${counter}`;
-        existingCategory = await Category.findOne({ 
+        existingCategory = await Category.findOne({
           slug,
           _id: { $ne: category._id }
         });
         counter++;
-        
+
         if (counter > 1000) {
           slug = `${baseSlug}-${Date.now()}`;
           break;
         }
       }
-      
+
       category.slug = slug;
       await category.save();
-      console.log(`    ✅ Fixed: slug = "${slug}"`);
     }
 
-    console.log(`\n✅ Successfully fixed ${categories.length} category(ies)!`);
     process.exit(0);
   } catch (error) {
     console.error('❌ Error fixing category slugs:', error);
@@ -131,4 +118,3 @@ async function fixCategorySlugs() {
 
 // Run the script
 fixCategorySlugs();
-

@@ -34,14 +34,9 @@ const migrateUserIds = async () => {
   try {
     // Connect to MongoDB
     await connectDB();
-    console.log('Connected to MongoDB');
-
     // Find all users without userId
     const usersWithoutId = await User.find({ userId: { $exists: false } });
-    console.log(`Found ${usersWithoutId.length} users without userId`);
-
     if (usersWithoutId.length === 0) {
-      console.log('✅ All users already have userId');
       process.exit(0);
     }
 
@@ -50,10 +45,8 @@ const migrateUserIds = async () => {
       const userId = await generateUserId();
       user.userId = userId;
       await user.save();
-      console.log(`✅ Assigned userId ${userId} to user ${user.phone}`);
-    }
+      }
 
-    console.log(`\n✅ Successfully migrated ${usersWithoutId.length} users`);
     process.exit(0);
   } catch (error) {
     console.error('❌ Error:', error.message);

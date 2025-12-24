@@ -1,13 +1,19 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { sendOTP } from '../services/authService';
+import { useToast } from '../hooks/useToast';
+import Toast from '../components/Toast';
 
 function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { toast, showToast, hideToast } = useToast();
   const [mobileNumber, setMobileNumber] = useState('');
   const [countryCode, setCountryCode] = useState('+91');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const redirectMessage = location.state?.message || null;
+  const redirectTo = location.state?.redirectTo || null;
 
   useEffect(() => {
     // Prevent body scroll on mount
@@ -42,7 +48,7 @@ function LoginPage() {
 
   const handleContinue = async () => {
     if (mobileNumber.length !== 10) {
-      alert('कृपया 10 अंकों का मोबाइल नंबर दर्ज करें');
+      showToast('कृपया 10 अंकों का मोबाइल नंबर दर्ज करें', 'error');
       return;
     }
 
@@ -55,14 +61,20 @@ function LoginPage() {
       
       if (response.success) {
         // Navigate to OTP page (mobile number will be saved in userData after OTP verification)
-        navigate('/otp', { state: { mobileNumber: fullPhoneNumber } });
+        navigate('/otp', { 
+          state: { 
+            mobileNumber: fullPhoneNumber,
+            redirectTo: redirectTo,
+            redirectMessage: redirectMessage
+          } 
+        });
       } else {
         setError(response.message || 'OTP भेजने में समस्या हुई');
       }
     } catch (error) {
       console.error('Send OTP error:', error);
       setError(error.message || 'OTP भेजने में समस्या हुई। कृपया पुनः प्रयास करें।');
-      alert(error.message || 'OTP भेजने में समस्या हुई। कृपया पुनः प्रयास करें।');
+      showToast(error.message || 'OTP भेजने में समस्या हुई। कृपया पुनः प्रयास करें।', 'error');
     } finally {
       setLoading(false);
     }
@@ -83,7 +95,8 @@ function LoginPage() {
   };
 
   return (
-    <div className="fixed inset-0 overflow-hidden bg-white flex flex-col page-transition" style={{ height: 'calc(var(--vh, 1vh) * 100)' }}>
+    <>
+      <div className="fixed inset-0 overflow-hidden bg-white flex flex-col page-transition" style={{ height: 'calc(var(--vh, 1vh) * 100)' }}>
       {/* Header - Sticky */}
       <div className="sticky top-0 z-10 flex items-center justify-between px-2.5 sm:px-3 py-2 sm:py-2.5 shadow-md flex-shrink-0" style={{ backgroundColor: '#E21E26' }}>
         <button
@@ -119,8 +132,15 @@ function LoginPage() {
           {/* Login Prompt */}
           <div className="mb-2 sm:mb-3">
             <p className="text-xs sm:text-sm font-semibold text-gray-900 text-center leading-snug">
-              कृपया लॉगिन करने के लिए अपना मोबाइल नंबर जोड़ें
+              {redirectMessage || 'कृपया लॉगिन करने के लिए अपना मोबाइल नंबर जोड़ें'}
             </p>
+            {redirectMessage && (
+              <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-xs text-blue-700 text-center leading-snug">
+                  {redirectMessage}
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Mobile Number Input */}
@@ -186,6 +206,17 @@ function LoginPage() {
         </div>
       </div>
     </div>
+
+    {/* Toast Notification */}
+    {toast && (
+      <Toast
+        message={toast.message}
+        type={toast.type}
+        duration={toast.duration}
+        onClose={hideToast}
+      />
+    )}
+    </>
   );
 }
 

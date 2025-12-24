@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getBanners } from '../services/newsService';
+import LazyImage from '../../../components/LazyImage';
 
 function Banner({ position = 'news_feed', category = null }) {
   const [banners, setBanners] = useState([]);
@@ -58,7 +59,7 @@ function Banner({ position = 'news_feed', category = null }) {
       <div className="w-full my-4 sm:my-5">
         <div className="w-full max-w-full border border-gray-200 rounded-lg overflow-hidden bg-white">
           <div className="relative w-full aspect-video bg-black/5">
-            <img
+            <LazyImage
               src={getPlaceholderBanner()}
               alt="Advertisement"
               className="absolute inset-0 w-full h-full object-contain"
@@ -95,17 +96,14 @@ function Banner({ position = 'news_feed', category = null }) {
               playsInline
             />
           ) : banner.imageUrl ? (
-            <img
+            <LazyImage
               src={banner.imageUrl}
               alt={banner.title || 'Advertisement'}
               className="absolute inset-0 w-full h-full object-contain"
-              onError={(e) => {
-                // If image fails, try placeholder
-                e.target.src = getPlaceholderBanner();
-              }}
+              errorSrc={getPlaceholderBanner()}
             />
           ) : (
-            <img
+            <LazyImage
               src={getPlaceholderBanner()}
               alt="Advertisement"
               className="absolute inset-0 w-full h-full object-contain"

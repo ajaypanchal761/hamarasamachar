@@ -223,7 +223,6 @@ function UserEpaperPage() {
                 }, 100);
             } catch (fetchError) {
                 // Fallback method: Use anchor tag with download attribute
-                console.warn('Fetch method failed, trying direct download:', fetchError);
                 const link = document.createElement('a');
                 link.href = downloadUrl;
                 link.download = fileName;

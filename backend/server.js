@@ -18,6 +18,7 @@ import adminEpaperRoutes from './routes/admin/epaperRoutes.js';
 import adminDashboardRoutes from './routes/admin/dashboardRoutes.js';
 import adminPlanRoutes from './routes/admin/planRoutes.js';
 import adminFranchiseLeadRoutes from './routes/admin/franchiseLeadRoutes.js';
+import debugRoutes from './routes/debugRoutes.js';
 
 import userAuthRoutes from './routes/user/authRoutes.js';
 import userNewsRoutes from './routes/user/newsRoutes.js';
@@ -30,6 +31,7 @@ import userCategoryRoutes from './routes/user/categoryRoutes.js';
 import userPaymentRoutes from './routes/user/paymentRoutes.js';
 import userPlanRoutes from './routes/user/planRoutes.js';
 import userFranchiseLeadRoutes from './routes/user/franchiseLeadRoutes.js';
+import userNotificationRoutes from './routes/user/notificationRoutes.js';
 
 // Import middleware
 import { errorHandler } from './middlewares/errorHandler.js';
@@ -49,28 +51,15 @@ connectDB();
     if (testResult.success) {
       console.log(`✅ SMS Hub India Connected: ${testResult.senderId}`);
     } else {
-      console.warn('⚠️ SMS Hub India: Configuration missing. Please configure SMSINDIAHUB_API_KEY and SMSINDIAHUB_SENDER_ID in .env file.');
+      console.error('❌ SMS Hub India: Configuration missing. Please configure SMSINDIAHUB_API_KEY and SMSINDIAHUB_SENDER_ID environment variables.');
     }
   } catch (smsError) {
-    console.warn('⚠️ SMS Hub India: Configuration missing or invalid. OTP SMS will not be sent.');
+    console.error('❌ SMS Hub India: Configuration missing or invalid. Please check your environment variables.');
   }
 })();
 
 // Middleware
-app.use(cors({
-  origin: [
-    'https://hamarasamachar.co.in',
-    'https://hamarasamachar.co.in/',
-    'https://www.hamarasamachar.co.in',
-    // Vercel deployment URLs (add your actual Vercel URL after deployment)
-    // 'https://hamarasamachar.vercel.app',
-    // 'https://your-project-name.vercel.app',
-    // Local development
-    'http://localhost:3000',
-    'http://localhost:5173'
-  ],
-  credentials: true
-}));
+app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan('dev'));
@@ -79,6 +68,9 @@ app.use(morgan('dev'));
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'Server is running' });
 });
+
+// Debug Routes (for testing notifications)
+app.use('/api/debug', debugRoutes);
 
 // Admin Routes
 app.use('/api/admin/auth', adminAuthRoutes);
@@ -106,11 +98,12 @@ app.use('/api/user/categories', userCategoryRoutes);
 app.use('/api/user/payment', userPaymentRoutes);
 app.use('/api/user/plans', userPlanRoutes);
 app.use('/api/user/franchise-leads', userFranchiseLeadRoutes);
+app.use('/api/user/notifications', userNotificationRoutes);
 
 // Error handling middleware
 app.use(errorHandler);
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5006;
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

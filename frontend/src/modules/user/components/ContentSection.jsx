@@ -1,4 +1,6 @@
 import { useNavigate } from 'react-router-dom';
+import LazyImage from '../../../components/LazyImage';
+import LazyVideo from '../../../components/LazyVideo';
 
 function ContentSection({ section, onShare, newsId = null }) {
   const navigate = useNavigate();
@@ -98,14 +100,11 @@ function ContentSection({ section, onShare, newsId = null }) {
     case 'image':
       return (
         <div className="my-4 sm:my-5 border border-gray-200 rounded-lg overflow-hidden bg-white">
-          <img
+          <LazyImage
             src={section.url}
             alt={section.alt || 'News Image'}
             className="w-full"
-            onError={(e) => {
-              e.target.src = `https://picsum.photos/800/400?random=${newsId || 'fallback'}`;
-            }}
-            loading="lazy"
+            errorSrc={`https://picsum.photos/800/400?random=${newsId || 'fallback'}`}
           />
           {/* Share Button below Image */}
           {onShare && (
@@ -137,7 +136,7 @@ function ContentSection({ section, onShare, newsId = null }) {
             className="w-full h-64 sm:h-80 md:h-96 relative bg-gray-200 cursor-pointer group"
             onClick={handleVideoClick}
           >
-            <video
+            <LazyVideo
               src={section.url}
               className="w-full h-full object-cover"
               muted

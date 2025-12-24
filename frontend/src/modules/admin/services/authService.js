@@ -2,7 +2,7 @@
 const ADMIN_TOKEN_KEY = 'admin_token';
 const ADMIN_USER_KEY = 'admin_user';
 const ADMIN_SESSION_KEY = 'admin_session';
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5006/api';
 
 export const authService = {
   // Login with username/email and password

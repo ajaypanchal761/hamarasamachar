@@ -26,3 +26,8 @@ Thumbs.db
 dist/
 build/
 
+backend/config/hamara-samachar-4b848-firebase-adminsdk-fbsvc-88218328ec.json
+*.pem
+*.key
+*.p12
+firebase-*.json

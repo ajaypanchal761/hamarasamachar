@@ -15,10 +15,8 @@ const connectCloudinary = async () => {
     if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) {
       // Test connection by pinging Cloudinary
       await cloudinary.api.ping();
-      console.log(`Cloudinary Connected: ${process.env.CLOUDINARY_CLOUD_NAME}`);
-    } else {
-      console.warn('Cloudinary: Configuration missing. Please check your .env file.');
-    }
+      } else {
+      }
   } catch (error) {
     console.error('Cloudinary Connection Error:', error.message);
   }

@@ -78,7 +78,6 @@ export const sendPasswordResetOTP = async (email, otp, name = 'User') => {
     };
 
     const info = await transporter.sendMail(mailOptions);
-    console.log('✅ Password reset OTP email sent:', info.messageId);
     return {
       success: true,
       messageId: info.messageId,
@@ -96,7 +95,6 @@ export const sendPasswordResetOTP = async (email, otp, name = 'User') => {
 export const verifyEmailConfig = async () => {
   try {
     await transporter.verify();
-    console.log('✅ Email server is ready to send messages');
     return true;
   } catch (error) {
     console.error('❌ Email server configuration error:', error);

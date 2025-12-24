@@ -780,6 +780,19 @@ const TipTapEditor = ({ content = '', onChange, placeholder = 'यहाँ ल�
         editorProps: {
             attributes: {
                 class: 'min-h-[300px] p-4 focus:outline-none tiptap-content',
+                // Ensure copy-paste works properly
+                contentEditable: true,
+                // Allow paste events
+                onpaste: (e) => {
+                    // Let the TipTap handlePaste function manage this
+                    return true;
+                },
+                oncopy: (e) => {
+                    return true;
+                },
+                oncut: (e) => {
+                    return true;
+                },
             },
             handleDrop: (view, event, slice, moved) => {
                 if (!moved && event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files.length > 0) {
@@ -809,35 +822,48 @@ const TipTapEditor = ({ content = '', onChange, placeholder = 'यहाँ ल�
                 }
                 return false;
             },
-            // Strip color styles from pasted content
+            // Allow normal copy-paste functionality
             handlePaste: (view, event, slice) => {
-                // Get pasted HTML content
+                // For simple text paste, let TipTap handle it normally
+                const pastedText = event.clipboardData?.getData('text/plain');
                 const pastedHtml = event.clipboardData?.getData('text/html');
-                if (pastedHtml) {
-                    // Strip color and background-color styles
-                    const cleanedHtml = pastedHtml
-                        .replace(/color:\s*[^;]+;?/gi, '')
-                        .replace(/background-color:\s*[^;]+;?/gi, '')
-                        .replace(/style="[^"]*color:[^"]*"[^>]*>/gi, '>')
-                        .replace(/style="[^"]*background-color:[^"]*"[^>]*>/gi, '>');
 
-                    // Replace the clipboard data with cleaned HTML
-                    const cleanedData = new DataTransfer();
-                    cleanedData.setData('text/html', cleanedHtml);
-                    cleanedData.setData('text/plain', event.clipboardData.getData('text/plain'));
-
-                    // Create a new paste event with cleaned data
-                    const newEvent = new ClipboardEvent('paste', {
-                        clipboardData: cleanedData,
-                        bubbles: true,
-                        cancelable: true
-                    });
-
-                    // Dispatch the cleaned paste event
-                    view.dom.dispatchEvent(newEvent);
-                    return true; // Prevent default handling
+                // If it's just plain text, let default handling work
+                if (pastedText && !pastedHtml) {
+                    return false; // Use default TipTap paste handling
                 }
-                return false; // Use default paste handling for non-HTML content
+
+                // If it's HTML content, clean it but don't interfere with basic pasting
+                if (pastedHtml) {
+                    // Only clean if it contains color styles, otherwise let it pass through
+                    if (pastedHtml.includes('color:') || pastedHtml.includes('background-color:')) {
+                        // Strip color and background-color styles
+                        const cleanedHtml = pastedHtml
+                            .replace(/color:\s*[^;]+;?/gi, '')
+                            .replace(/background-color:\s*[^;]+;?/gi, '')
+                            .replace(/style="[^"]*color:[^"]*"[^>]*>/gi, '>')
+                            .replace(/style="[^"]*background-color:[^"]*"[^>]*>/gi, '>');
+
+                        // Replace the clipboard data with cleaned HTML
+                        const cleanedData = new DataTransfer();
+                        cleanedData.setData('text/html', cleanedHtml);
+                        cleanedData.setData('text/plain', event.clipboardData.getData('text/plain'));
+
+                        // Create a new paste event with cleaned data
+                        const newEvent = new ClipboardEvent('paste', {
+                            clipboardData: cleanedData,
+                            bubbles: true,
+                            cancelable: true
+                        });
+
+                        // Dispatch the cleaned paste event
+                        view.dom.dispatchEvent(newEvent);
+                        return true; // Prevent default handling
+                    }
+                }
+
+                // For all other cases, use default TipTap paste handling
+                return false;
             }
         }
     });
@@ -867,10 +893,18 @@ const TipTapEditor = ({ content = '', onChange, placeholder = 'यहाँ ल�
                     onCancel={confirmDialog.onCancel}
                 />
             )}
-            <div className={`border rounded-xl bg-white overflow-hidden transition-all duration-200 ${isFocused ? 'ring-2 ring-[#E21E26] border-[#E21E26]' : 'border-gray-300 hover:border-gray-400'}`}>
+            <div className={`border rounded-xl bg-white overflow-hidden transition-all duration-200 ${isFocused ? 'ring-2 ring-[#E21E26] border-[#E21E26]' : 'border-gray-300 hover:border-gray-400'}`} style={{ userSelect: 'text', WebkitUserSelect: 'text' }}>
 
             {/* Custom Styles Injection */}
             <style>{`
+          /* Ensure copy-paste works */
+          .tiptap-content {
+            user-select: text;
+            -webkit-user-select: text;
+            -moz-user-select: text;
+            -ms-user-select: text;
+          }
+
           .tiptap-content h1 { font-size: 2.25em; font-weight: 800; margin-bottom: 0.5em; line-height: 1.2; }
           .tiptap-content h2 { font-size: 1.75em; font-weight: 700; margin-bottom: 0.5em; margin-top: 1em; line-height: 1.3; }
           .tiptap-content h3 { font-size: 1.5em; font-weight: 600; margin-bottom: 0.5em; margin-top: 1em; }

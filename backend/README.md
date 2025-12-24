@@ -19,14 +19,14 @@ Backend API for Hamara Samachar news application built with Node.js, Express, an
 
 ## Installation
 
-1. Install dependencies:s
+1. Install dependencies:
 ```bash
 npm install
 ```
 
 2. Create a `.env` file in the root directory with the following variables:
 ```
-PORT=5000
+PORT=5006
 NODE_ENV=development
 
 MONGODB_URI=mongodb://localhost:27017/hamarasamachar
@@ -207,7 +207,7 @@ All errors are returned in the following format:
 
 ## Development
 
-The server runs on port 5000 by default. Make sure MongoDB is running before starting the server.
+The server runs on port 5006 by default. Make sure MongoDB is running before starting the server.
 
 ## License
 

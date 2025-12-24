@@ -11,23 +11,39 @@ function BookmarkNewsPage() {
   const [error, setError] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // Check authentication status
+  // Check authentication status and redirect if not authenticated
   useEffect(() => {
     const token = localStorage.getItem('userToken');
-    setIsAuthenticated(!!token);
-  }, []);
+    if (!token) {
+      // Redirect to login with message
+      navigate('/login', { 
+        state: { 
+          message: 'बुकमार्क न्यूज़ देखने के लिए कृपया लॉगिन करें या साइन अप करें',
+          redirectTo: '/bookmarks'
+        } 
+      });
+      return;
+    }
+    setIsAuthenticated(true);
+  }, [navigate]);
 
   // Fetch bookmarked news from API
   useEffect(() => {
     const fetchBookmarks = async () => {
+      if (!isAuthenticated) return;
+
       try {
         setLoading(true);
         setError(null);
 
         const token = localStorage.getItem('userToken');
         if (!token) {
-          setError('कृपया लॉगिन करें');
-          setLoading(false);
+          navigate('/login', { 
+            state: { 
+              message: 'बुकमार्क न्यूज़ देखने के लिए कृपया लॉगिन करें या साइन अप करें',
+              redirectTo: '/bookmarks'
+            } 
+          });
           return;
         }
 
@@ -35,6 +51,18 @@ function BookmarkNewsPage() {
         setBookmarkedNews(response.data || []);
       } catch (err) {
         console.error('Error fetching bookmarks:', err);
+        // If unauthorized, redirect to login
+        if (err.message && (err.message.includes('authenticated') || err.message.includes('authorization') || err.message.includes('token'))) {
+          localStorage.removeItem('userToken');
+          localStorage.removeItem('userData');
+          navigate('/login', { 
+            state: { 
+              message: 'बुकमार्क न्यूज़ देखने के लिए कृपया लॉगिन करें या साइन अप करें',
+              redirectTo: '/bookmarks'
+            } 
+          });
+          return;
+        }
         setError(err.message || 'बुकमार्क लोड करने में त्रुटि हुई');
       } finally {
         setLoading(false);
@@ -43,10 +71,8 @@ function BookmarkNewsPage() {
 
     if (isAuthenticated) {
       fetchBookmarks();
-    } else {
-      setLoading(false);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, navigate]);
 
   // Listen for bookmark changes to refresh the list
   useEffect(() => {
@@ -121,33 +147,13 @@ function BookmarkNewsPage() {
                 />
               </svg>
               <p className="text-gray-500 text-base mb-4">{error}</p>
-              {error.includes('लॉगिन') && (
-                <button
-                  onClick={() => navigate('/login')}
-                  className="bg-red-600 text-white px-6 py-2 rounded-full font-medium hover:bg-red-700 transition-colors"
-                >
-                  लॉगिन करें
-                </button>
-              )}
-            </div>
-          ) : !isAuthenticated ? (
-            <div className="text-center py-12">
-              <svg
-                className="mx-auto h-12 w-12 text-gray-400 mb-3"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                />
-              </svg>
-              <p className="text-gray-500 text-base mb-4">बुकमार्क देखने के लिए कृपया लॉगिन करें</p>
               <button
-                onClick={() => navigate('/login')}
+                onClick={() => navigate('/login', { 
+                  state: { 
+                    message: 'बुकमार्क न्यूज़ देखने के लिए कृपया लॉगिन करें या साइन अप करें',
+                    redirectTo: '/bookmarks'
+                  } 
+                })}
                 className="bg-red-600 text-white px-6 py-2 rounded-full font-medium hover:bg-red-700 transition-colors"
               >
                 लॉगिन करें
@@ -157,7 +163,7 @@ function BookmarkNewsPage() {
             <div className="space-y-0">
               {bookmarkedNews.map((news) => {
                 const newsId = news.id || news._id;
-                return <NewsCard key={newsId} news={news} />;
+                return <NewsCard key={newsId} news={news} isInBookmarkPage={true} />;
               })}
             </div>
           ) : (

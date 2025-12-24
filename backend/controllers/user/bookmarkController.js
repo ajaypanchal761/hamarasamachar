@@ -159,6 +159,15 @@ export const checkBookmark = async (req, res) => {
   try {
     const { newsId } = req.params;
 
+    // Check if user is authenticated
+    if (!req.user || !req.user._id) {
+      return res.json({
+        success: true,
+        isBookmarked: false,
+        message: 'User not authenticated'
+      });
+    }
+
     const bookmark = await Bookmark.findOne({
       user: req.user._id,
       news: newsId

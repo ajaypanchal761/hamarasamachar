@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5006/api';
 
 // Helper function to get auth token
 const getAuthToken = () => {
@@ -123,7 +123,7 @@ export const createNews = async (newsData) => {
       const response = await fetch(`${API_BASE_URL}/admin/news`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${token}`
+        // No authorization header needed - endpoint is now public
         // Don't set Content-Type, let browser set it with boundary for FormData
       },
       body: formData

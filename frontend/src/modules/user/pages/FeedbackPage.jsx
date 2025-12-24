@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { submitFeedback, getMyFeedbacks } from '../services/feedbackService';
+import { useToast } from '../hooks/useToast';
+import Toast from '../components/Toast';
 
 
 function FeedbackPage() {
   const navigate = useNavigate();
+  const { toast, showToast, hideToast } = useToast();
   const [selectedType, setSelectedType] = useState(null); // 'app' or 'news'
   const [feedback, setFeedback] = useState('');
   const [submitted, setSubmitted] = useState(false);
@@ -48,11 +51,11 @@ function FeedbackPage() {
 
   const handleSubmit = async () => {
     if (!selectedType) {
-      alert('कृपया फीडबैक का प्रकार चुनें');
+      showToast('कृपया फीडबैक का प्रकार चुनें', 'error');
       return;
     }
     if (!feedback.trim()) {
-      alert('कृपया फीडबैक लिखें');
+      showToast('कृपया फीडबैक लिखें', 'error');
       return;
     }
 
@@ -77,7 +80,7 @@ function FeedbackPage() {
       }, 2000);
     } catch (error) {
       console.error('Error submitting feedback:', error);
-      alert(error.message || 'फीडबैक सबमिट करने में समस्या हुई। कृपया पुनः प्रयास करें।');
+      showToast(error.message || 'फीडबैक सबमिट करने में समस्या हुई। कृपया पुनः प्रयास करें।', 'error');
     }
   };
 
@@ -109,8 +112,9 @@ function FeedbackPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
-      <div className="page-transition pb-20 sm:pb-24">
+    <>
+      <div className="min-h-screen bg-white">
+        <div className="page-transition pb-20 sm:pb-24">
         {/* Header */}
         <div className="sticky top-0 z-10 flex items-center justify-between px-2.5 sm:px-3 py-2 sm:py-2.5 border-b border-gray-200" style={{ backgroundColor: '#E21E26' }}>
           <button
@@ -321,6 +325,17 @@ function FeedbackPage() {
       {/* Bottom Navbar */}
 
     </div>
+
+    {/* Toast Notification */}
+    {toast && (
+      <Toast
+        message={toast.message}
+        type={toast.type}
+        duration={toast.duration}
+        onClose={hideToast}
+      />
+    )}
+    </>
   );
 }
 

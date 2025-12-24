@@ -10,7 +10,7 @@ import Toast from '../components/Toast';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { getNewsById, createNews, updateNews, deleteNews } from '../services/newsService';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5006/api';
 
 function NewsFormPage() {
     const navigate = useNavigate();
@@ -35,7 +35,7 @@ function NewsFormPage() {
         content: '',
         author: '',
         publishDate: new Date().toISOString().split('T')[0],
-        status: 'draft',
+        status: 'published',
         metaDescription: '',
         tags: ''
     });

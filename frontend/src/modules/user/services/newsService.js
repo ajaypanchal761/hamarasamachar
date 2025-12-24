@@ -1,5 +1,5 @@
 // News service for user panel
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5006/api';
 
 /**
  * Format time ago (e.g., "10m ago", "2h ago")
@@ -29,21 +29,22 @@ const formatTimeAgo = (dateString) => {
 const transformNewsData = (newsArray) => {
   return newsArray.map(news => ({
     id: news._id || news.id,
-    title: news.title,
+    title: news.title || '',
     category: news.category?.name || news.categoryName || 'अन्य',
     type: news.type || (news.videoUrl ? 'video' : 'photo'),
-    image: news.featuredImage || news.image,
+    image: news.featuredImage || news.image || '',
     videoUrl: news.videoUrl || null,
     duration: news.duration || null,
     subtitle: news.subtitle || '',
-    subtitleText: news.subtitleText || news.description || news.excerpt || '',
-    description: news.description || news.excerpt || '',
+    subtitleText: news.subtitleText || news.metaDescription || news.description || news.excerpt || '',
+    description: news.metaDescription || news.description || news.excerpt || '',
     content: news.content || '',
     author: news.author?.name || news.author || 'रिपोर्टर',
     date: news.publishDate ? new Date(news.publishDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
     timeAgo: formatTimeAgo(news.publishDate),
     isBreaking: news.isBreakingNews || false,
     district: news.district || null,
+    tags: news.tags || [],
     contentSections: news.contentSections || [],
     views: news.views || 0
   }));

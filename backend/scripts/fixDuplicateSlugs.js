@@ -8,8 +8,6 @@ const fixDuplicateSlugs = async () => {
   try {
     // Connect to MongoDB
     await mongoose.connect(process.env.MONGODB_URI);
-    console.log('Connected to MongoDB');
-
     // Find all news with duplicate or invalid slugs
     const newsWithInvalidSlugs = await News.find({
       $or: [
@@ -18,8 +16,6 @@ const fixDuplicateSlugs = async () => {
         { slug: { $exists: false } }
       ]
     });
-
-    console.log(`Found ${newsWithInvalidSlugs.length} news items with invalid slugs`);
 
     // Fix each news item
     for (const news of newsWithInvalidSlugs) {
@@ -53,10 +49,8 @@ const fixDuplicateSlugs = async () => {
 
       // Update the news item
       await News.findByIdAndUpdate(news._id, { slug: finalSlug });
-      console.log(`Fixed slug for news ${news._id}: "${news.slug}" -> "${finalSlug}"`);
-    }
+      }
 
-    console.log('All duplicate slugs fixed!');
     process.exit(0);
   } catch (error) {
     console.error('Error fixing duplicate slugs:', error);

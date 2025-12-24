@@ -1,5 +1,6 @@
 import Epaper from '../../models/Epaper.js';
 import { uploadToCloudinary, deleteFromCloudinary } from '../../utils/cloudinaryUpload.js';
+import { sendNewEpaperNotification } from '../../services/pushNotificationService.js';
 
 // @desc    Get all epapers
 // @route   GET /api/admin/epaper
@@ -8,7 +9,6 @@ export const getAllEpapers = async (req, res) => {
   try {
     const { startDate, endDate, page = 1, limit = 25 } = req.query;
 
-    // Build query
     const query = {};
 
     if (startDate && endDate) {
@@ -18,7 +18,6 @@ export const getAllEpapers = async (req, res) => {
       };
     }
 
-    // Calculate pagination
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
     const epapers = await Epaper.find(query)
@@ -57,7 +56,6 @@ export const uploadEpaper = async (req, res) => {
       });
     }
 
-    // Check if files are uploaded
     const pdfFile = req.files && req.files['file'] ? req.files['file'][0] : null;
     const coverImageFile = req.files && req.files['coverImage'] ? req.files['coverImage'][0] : null;
 
@@ -68,7 +66,6 @@ export const uploadEpaper = async (req, res) => {
       });
     }
 
-    // Check if epaper for this date already exists
     const existingEpaper = await Epaper.findOne({ date: new Date(date) });
     if (existingEpaper) {
       return res.status(400).json({
@@ -77,18 +74,19 @@ export const uploadEpaper = async (req, res) => {
       });
     }
 
-    // Upload PDF to Cloudinary
     const pdfResult = await uploadToCloudinary(pdfFile, 'hamarasamachar/epaper', 'raw');
 
-    // Upload cover image to Cloudinary if provided
     let coverUrl = '';
     if (coverImageFile) {
       try {
-        const coverResult = await uploadToCloudinary(coverImageFile, 'hamarasamachar/epaper/covers', 'image');
+        const coverResult = await uploadToCloudinary(
+          coverImageFile,
+          'hamarasamachar/epaper/covers',
+          'image'
+        );
         coverUrl = coverResult.secure_url;
       } catch (coverError) {
         console.error('Error uploading cover image:', coverError);
-        // Continue without cover image if upload fails
         coverUrl = '';
       }
     }
@@ -96,10 +94,23 @@ export const uploadEpaper = async (req, res) => {
     const epaper = await Epaper.create({
       date: new Date(date),
       pdfUrl: pdfResult.secure_url,
-      coverUrl: coverUrl,
+      coverUrl,
       fileName: pdfFile.originalname,
       views: 0
     });
+
+    // Send push notification for new e-paper
+    try {
+      await sendNewEpaperNotification({
+        _id: epaper._id,
+        date: epaper.date.toISOString().split('T')[0]
+      });
+    } catch (notificationError) {
+      console.error(
+        '❌ [EPAPER DEBUG] Error sending e-paper notification:',
+        notificationError
+      );
+    }
 
     res.status(201).json({
       success: true,
@@ -127,7 +138,6 @@ export const deleteEpaper = async (req, res) => {
       });
     }
 
-    // Delete PDF from Cloudinary
     try {
       const publicId = epaper.pdfUrl.split('/').pop().split('.')[0];
       await deleteFromCloudinary(`hamarasamachar/epaper/${publicId}`);
@@ -135,16 +145,15 @@ export const deleteEpaper = async (req, res) => {
       console.error('Error deleting PDF:', error);
     }
 
-    // Delete cover image from Cloudinary if exists
     if (epaper.coverUrl) {
       try {
-        // Extract public ID from Cloudinary URL
-        // URL format: https://res.cloudinary.com/.../hamarasamachar/epaper/covers/filename
         const urlParts = epaper.coverUrl.split('/');
-        const coversIndex = urlParts.findIndex(part => part === 'covers');
+        const coversIndex = urlParts.findIndex(p => p === 'covers');
         if (coversIndex !== -1) {
-          const publicIdParts = urlParts.slice(coversIndex);
-          const publicId = publicIdParts.join('/').replace(/\.[^/.]+$/, ''); // Remove extension
+          const publicId = urlParts
+            .slice(coversIndex)
+            .join('/')
+            .replace(/\.[^/.]+$/, '');
           await deleteFromCloudinary(publicId, 'image');
         }
       } catch (error) {
@@ -165,4 +174,3 @@ export const deleteEpaper = async (req, res) => {
     });
   }
 };
-

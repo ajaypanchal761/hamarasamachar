@@ -1,5 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { useEffect } from 'react';
 import { AuthProvider } from './modules/admin/context/AuthContext';
+import { setupForegroundNotificationHandler } from './services/push-notification.service';
 import UserHomePage from './modules/user/pages/HomePage';
 import AdminPage from './modules/admin/pages/AdminPage';
 import AdminLoginPage from './modules/admin/pages/AdminLoginPage';
@@ -44,6 +46,75 @@ import JournalistTrainingPage from './modules/user/pages/JournalistTrainingPage'
 import TermsAndConditionsPage from './modules/user/pages/TermsAndConditionsPage';
 
 function App() {
+  useEffect(() => {
+    // Setup foreground notification handler (runs on app load, no auth required)
+    setupForegroundNotificationHandler((payload) => {
+      console.log('📱 Foreground notification received:', payload);
+      // Custom handling if needed
+    });
+  }, []);
+
+  // Token validation on app startup (PWA persistence fix)
+  useEffect(() => {
+    const validateAuthState = async () => {
+      try {
+        const token = localStorage.getItem('userToken');
+        const userData = localStorage.getItem('userData');
+
+        // Only validate if we have stored auth data
+        if (token && userData) {
+          console.log('🔍 Validating stored authentication token...');
+
+          const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5006/api';
+
+          const response = await fetch(`${API_BASE_URL}/user/auth/me`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            }
+          });
+
+          if (response.status === 401) {
+            // Token is invalid/expired - clear stored data
+            console.log('⚠️ Stored token is invalid, clearing authentication data');
+            localStorage.removeItem('userToken');
+            localStorage.removeItem('userData');
+
+            // Optional: Could redirect to login, but let's keep it non-disruptive
+            // Users will be prompted to login when they try to access protected content
+          } else if (response.ok) {
+            console.log('✅ Stored token is valid');
+          } else {
+            console.warn('⚠️ Token validation failed with status:', response.status);
+          }
+        }
+      } catch (error) {
+        // Network errors or other issues - don't clear tokens, let app handle gracefully
+        console.error('❌ Auth validation error (keeping existing tokens):', error.message);
+        // Don't clear tokens on network errors to avoid unnecessary logouts
+      }
+    };
+
+    // Run validation on app startup
+    validateAuthState();
+
+    // Also validate when app becomes visible (user returns to PWA)
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        console.log('📱 App became visible, re-validating auth...');
+        validateAuthState();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Cleanup
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+
   return (
     <Router>
       <AuthProvider>
