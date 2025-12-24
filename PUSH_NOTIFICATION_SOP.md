@@ -1,4 +1,4 @@
-# Push Notification System - Standard Operating Procedure (SOP)
+# Push Notification System - Standard Operating Procedure (SOP).
 
 ## 📋 Document Information
 - **Version**: 1.0
