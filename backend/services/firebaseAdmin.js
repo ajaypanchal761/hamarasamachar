@@ -1,4 +1,3 @@
-import admin from 'firebase-admin';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
@@ -8,13 +7,47 @@ const __dirname = path.dirname(__filename);
 
 // Initialize Firebase Admin
 let firebaseAdminInitialized = false;
+let admin = null;
 
-const initializeFirebaseAdmin = () => {
+// Dynamic import of firebase-admin to prevent server crash if package is not installed
+const getFirebaseAdmin = async () => {
+  if (admin) {
+    return admin;
+  }
+  
+  try {
+    const firebaseAdminModule = await import('firebase-admin');
+    admin = firebaseAdminModule.default;
+    return admin;
+  } catch (error) {
+    console.error('❌ Firebase Admin package not found. Please run: npm install firebase-admin');
+    console.error('❌ Error details:', error.message);
+    return null;
+  }
+};
+
+const initializeFirebaseAdmin = async () => {
   if (firebaseAdminInitialized) {
     return;
   }
 
   try {
+    // Get firebase-admin module
+    admin = await getFirebaseAdmin();
+    
+    // If package is not installed, return early
+    if (!admin) {
+      console.error('❌ Cannot initialize Firebase Admin: package not installed');
+      firebaseAdminInitialized = false;
+      return;
+    }
+    
+    // Check if already initialized
+    if (admin.apps.length > 0) {
+      firebaseAdminInitialized = true;
+      return;
+    }
+
     // Try to initialize with service account file path from environment
     const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
 
@@ -52,10 +85,12 @@ const initializeFirebaseAdmin = () => {
     }
 
     firebaseAdminInitialized = true;
-    console.log('Firebase Admin initialized successfully');
+    console.log('✅ Firebase Admin initialized successfully');
   } catch (error) {
-    console.error('Error initializing Firebase Admin:', error);
-    throw error;
+    console.error('❌ Error initializing Firebase Admin:', error.message);
+    // Don't throw error - allow server to continue without Firebase
+    // This prevents server crash if firebase-admin is not installed
+    firebaseAdminInitialized = false;
   }
 };
 
@@ -65,7 +100,13 @@ const sendPushNotification = async (tokens, payload) => {
 
   if (!firebaseAdminInitialized) {
     console.log('🔧 [FIREBASE DEBUG] Initializing Firebase Admin...');
-    initializeFirebaseAdmin();
+    await initializeFirebaseAdmin();
+  }
+
+  // If initialization failed, return early
+  if (!firebaseAdminInitialized || !admin) {
+    console.error('❌ [FIREBASE DEBUG] Firebase Admin is not initialized. Cannot send notifications.');
+    return;
   }
 
   if (!tokens || tokens.length === 0) {
@@ -112,6 +153,11 @@ const sendPushNotification = async (tokens, payload) => {
   };
 
   try {
+    // Ensure admin is loaded
+    if (!admin) {
+      admin = await getFirebaseAdmin();
+    }
+    
     // Check if messaging is available
     if (!admin.messaging) {
       throw new Error('Firebase Admin Messaging is not available. Please check Firebase Admin SDK initialization.');
