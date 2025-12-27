@@ -73,6 +73,15 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  isGuest: {
+    type: Boolean,
+    default: false
+  },
+  deviceId: {
+    type: String,
+    trim: true,
+    sparse: true
+  },
   stats: {
     bookmarks: {
       type: Number,

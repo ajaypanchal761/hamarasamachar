@@ -73,7 +73,7 @@ export const sendOTP = async (req, res) => {
 // @desc Verify OTP
 export const verifyOTP = async (req, res) => {
   try {
-    const { phone, otp, purpose = 'verification' } = req.body;
+    const { phone, otp, purpose = 'verification', fcmToken, deviceId } = req.body;
 
     if (!phone || !otp) {
       return res.status(400).json({ success: false, message: 'Phone and OTP are required' });
@@ -96,6 +96,21 @@ export const verifyOTP = async (req, res) => {
       await user.save();
     }
 
+    // Save FCM token during login if provided (for mobile apps)
+    if (fcmToken) {
+      try {
+        user.fcmTokenMobile = user.fcmTokenMobile || [];
+        user.fcmTokenMobile = user.fcmTokenMobile.filter(t => t !== fcmToken);
+        user.fcmTokenMobile.push(fcmToken);
+        user.fcmTokenMobile = user.fcmTokenMobile.slice(-10); // Keep last 10 tokens
+        await user.save();
+        console.log('✅ FCM token saved during login for user:', user._id);
+      } catch (fcmError) {
+        console.error('❌ Error saving FCM token during login:', fcmError);
+        // Don't fail login if FCM token save fails
+      }
+    }
+
     const token = generateToken(user._id);
     const isProfileComplete = !!(user.gender && user.selectedCategory);
 
@@ -103,46 +118,104 @@ export const verifyOTP = async (req, res) => {
       success: true,
       token,
       user,
-      isProfileComplete
+      isProfileComplete,
+      fcmTokenSaved: !!fcmToken
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// @desc Save FCM Token (Web)
+// @desc Save FCM Token (Web & Mobile)
 export const saveFCMToken = async (req, res) => {
   try {
-    const { token, platform = 'web', userId } = req.body;
+    const { token, platform = 'web', userId, deviceId } = req.body;
     if (!token) return res.status(400).json({ success: false, message: 'Token required' });
 
     let targetUserId = req.user?._id || userId;
 
+    // Try to get userId from JWT token if available
     if (!targetUserId && req.headers.authorization) {
-      const decoded = jwt.verify(req.headers.authorization.replace('Bearer ', ''), process.env.JWT_SECRET);
-      targetUserId = decoded.id;
+      try {
+        const decoded = jwt.verify(req.headers.authorization.replace('Bearer ', ''), process.env.JWT_SECRET);
+        targetUserId = decoded.id;
+      } catch (jwtError) {
+        // JWT invalid, continue with guest handling
+      }
     }
 
-    const user = await User.findById(targetUserId);
-    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    if (targetUserId) {
+      // User is authenticated - save to their account
+      const user = await User.findById(targetUserId);
+      if (!user) return res.status(404).json({ success: false, message: 'User not found' });
 
-    user.fcmTokens = user.fcmTokens || [];
-    user.fcmTokenMobile = user.fcmTokenMobile || [];
+      user.fcmTokens = user.fcmTokens || [];
+      user.fcmTokenMobile = user.fcmTokenMobile || [];
 
-    user.fcmTokens = user.fcmTokens.filter(t => t !== token);
-    user.fcmTokenMobile = user.fcmTokenMobile.filter(t => t !== token);
+      user.fcmTokens = user.fcmTokens.filter(t => t !== token);
+      user.fcmTokenMobile = user.fcmTokenMobile.filter(t => t !== token);
 
-    platform === 'mobile'
-      ? user.fcmTokenMobile.push(token)
-      : user.fcmTokens.push(token);
+      platform === 'mobile'
+        ? user.fcmTokenMobile.push(token)
+        : user.fcmTokens.push(token);
 
-    user.fcmTokens = user.fcmTokens.slice(-10);
-    user.fcmTokenMobile = user.fcmTokenMobile.slice(-10);
+      user.fcmTokens = user.fcmTokens.slice(-10);
+      user.fcmTokenMobile = user.fcmTokenMobile.slice(-10);
 
-    await user.save();
+      await user.save();
 
-    res.json({ success: true, message: 'FCM token saved successfully' });
+      res.json({
+        success: true,
+        message: 'FCM token saved successfully',
+        userType: 'authenticated',
+        userId: targetUserId
+      });
+    } else {
+      // Guest user - create or update guest FCM token entry
+      const guestDeviceId = deviceId || `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+      // Find existing guest user or create new one
+      let guestUser = await User.findOne({ deviceId: guestDeviceId, isGuest: true });
+
+      if (!guestUser) {
+        guestUser = new User({
+          deviceId: guestDeviceId,
+          isGuest: true,
+          status: 'Active',
+          name: `Guest User ${guestDeviceId}`,
+          // Set default preferences for notifications
+          notificationSettings: {
+            pushNotifications: true,
+            localNews: true
+          }
+        });
+      }
+
+      // Update FCM tokens based on platform
+      if (platform === 'mobile') {
+        guestUser.fcmTokenMobile = guestUser.fcmTokenMobile || [];
+        guestUser.fcmTokenMobile = guestUser.fcmTokenMobile.filter(t => t !== token);
+        guestUser.fcmTokenMobile.push(token);
+        guestUser.fcmTokenMobile = guestUser.fcmTokenMobile.slice(-10);
+      } else {
+        guestUser.fcmTokens = guestUser.fcmTokens || [];
+        guestUser.fcmTokens = guestUser.fcmTokens.filter(t => t !== token);
+        guestUser.fcmTokens.push(token);
+        guestUser.fcmTokens = guestUser.fcmTokens.slice(-10);
+      }
+
+      await guestUser.save();
+
+      res.json({
+        success: true,
+        message: 'FCM token saved successfully for guest user',
+        userType: 'guest',
+        deviceId: guestDeviceId,
+        userId: guestUser._id
+      });
+    }
   } catch (error) {
+    console.error('Error saving FCM token:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -150,34 +223,93 @@ export const saveFCMToken = async (req, res) => {
 // @desc Save FCM Token (Mobile)
 export const saveFCMTokenMobile = async (req, res) => {
   try {
-    const { token, userId } = req.body;
+    const { token, userId, deviceId } = req.body;
+
     if (!token) return res.status(400).json({ success: false, message: 'Token required' });
+    if (!userId) return res.status(400).json({ success: false, message: 'userId is required for mobile FCM tokens' });
 
     let targetUserId = req.user?._id || userId;
 
+    // Try to get userId from JWT token if available (for validation)
     if (!targetUserId && req.headers.authorization) {
-      const decoded = jwt.verify(req.headers.authorization.replace('Bearer ', ''), process.env.JWT_SECRET);
-      targetUserId = decoded.id;
+      try {
+        const decoded = jwt.verify(req.headers.authorization.replace('Bearer ', ''), process.env.JWT_SECRET);
+        targetUserId = decoded.id;
+      } catch (jwtError) {
+        // JWT invalid, continue with userId from body
+      }
     }
 
-    const user = await User.findById(targetUserId);
-    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    // Ensure we have a valid userId
+    if (!targetUserId) {
+      return res.status(400).json({ success: false, message: 'Valid userId is required' });
+    }
 
-    user.fcmTokens = user.fcmTokens || [];
-    user.fcmTokenMobile = user.fcmTokenMobile || [];
+    if (targetUserId) {
+      // User is authenticated - save to their account
+      const user = await User.findById(targetUserId);
+      if (!user) return res.status(404).json({ success: false, message: 'User not found' });
 
-    user.fcmTokens = user.fcmTokens.filter(t => t !== token);
-    user.fcmTokenMobile = user.fcmTokenMobile.filter(t => t !== token);
+      user.fcmTokens = user.fcmTokens || [];
+      user.fcmTokenMobile = user.fcmTokenMobile || [];
 
-    user.fcmTokenMobile.push(token);
+      user.fcmTokens = user.fcmTokens.filter(t => t !== token);
+      user.fcmTokenMobile = user.fcmTokenMobile.filter(t => t !== token);
 
-    user.fcmTokens = user.fcmTokens.slice(-10);
-    user.fcmTokenMobile = user.fcmTokenMobile.slice(-10);
+      user.fcmTokenMobile.push(token);
 
-    await user.save();
+      user.fcmTokens = user.fcmTokens.slice(-10);
+      user.fcmTokenMobile = user.fcmTokenMobile.slice(-10);
 
-    res.json({ success: true, message: 'FCM token saved successfully' });
+      await user.save();
+
+      res.json({
+        success: true,
+        message: 'FCM token saved successfully',
+        userType: 'authenticated',
+        userId: targetUserId
+      });
+    } else {
+      // Guest user - create or update guest FCM token entry
+      // We'll use deviceId or generate one to track guest tokens
+      const guestDeviceId = deviceId || `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+      // Find existing guest user or create new one
+      let guestUser = await User.findOne({ deviceId: guestDeviceId, isGuest: true });
+
+      if (!guestUser) {
+        guestUser = new User({
+          deviceId: guestDeviceId,
+          isGuest: true,
+          status: 'Active',
+          fcmTokenMobile: [token],
+          name: `Guest User ${guestDeviceId}`,
+          // Set default preferences for notifications
+          notificationSettings: {
+            pushNotifications: true,
+            localNews: true
+          }
+        });
+      } else {
+        // Update existing guest user's FCM token
+        guestUser.fcmTokenMobile = guestUser.fcmTokenMobile || [];
+        guestUser.fcmTokenMobile = guestUser.fcmTokenMobile.filter(t => t !== token);
+        guestUser.fcmTokenMobile.push(token);
+        guestUser.fcmTokenMobile = guestUser.fcmTokenMobile.slice(-10);
+      }
+
+      await guestUser.save();
+
+      res.json({
+        success: true,
+        message: 'FCM token saved successfully for guest user',
+        userType: 'guest',
+        deviceId: guestDeviceId,
+        userId: guestUser._id
+      });
+    }
   } catch (error) {
+    console.error('Error saving FCM token:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
