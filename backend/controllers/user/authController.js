@@ -223,26 +223,31 @@ export const saveFCMToken = async (req, res) => {
 // @desc Save FCM Token (Mobile)
 export const saveFCMTokenMobile = async (req, res) => {
   try {
-    const { token, userId, deviceId } = req.body;
+    const { token, userId } = req.body;
 
     if (!token) return res.status(400).json({ success: false, message: 'Token required' });
-    if (!userId) return res.status(400).json({ success: false, message: 'userId is required for mobile FCM tokens' });
 
-    let targetUserId = req.user?._id || userId;
+    // Get userId from JWT token (same as web implementation)
+    let targetUserId = req.user?._id;
 
-    // Try to get userId from JWT token if available (for validation)
+    // If no JWT user, try to get from Authorization header (same as web)
     if (!targetUserId && req.headers.authorization) {
       try {
         const decoded = jwt.verify(req.headers.authorization.replace('Bearer ', ''), process.env.JWT_SECRET);
         targetUserId = decoded.id;
       } catch (jwtError) {
-        // JWT invalid, continue with userId from body
+        return res.status(401).json({ success: false, message: 'Invalid authentication token' });
       }
     }
 
-    // Ensure we have a valid userId
+    // If still no userId, try from request body (fallback)
     if (!targetUserId) {
-      return res.status(400).json({ success: false, message: 'Valid userId is required' });
+      targetUserId = userId;
+    }
+
+    // Ensure we have a valid authenticated user (same as web)
+    if (!targetUserId) {
+      return res.status(401).json({ success: false, message: 'Authentication required for mobile FCM tokens' });
     }
 
     if (targetUserId) {
@@ -419,3 +424,4 @@ export const deleteAccount = async (req, res) => {
     });
   }
 };
+

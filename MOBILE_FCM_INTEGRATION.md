@@ -65,15 +65,23 @@ POST /api/user/auth/save-fcm-token
 POST /api/user/auth/save-fcm-token-mobile
 ```
 
-**Request Body (Authenticated User - Mandatory userId):**
+**Request Body (Same as Web - JWT Authentication):**
 ```json
 {
   "token": "mobile-fcm-token-string",
-  "userId": "REQUIRED-user-id"  // ← Mandatory field
+  "platform": "mobile"
 }
 ```
 
-**Note:** Guest user FCM token saving is not supported through this endpoint. Use OTP verification with FCM token instead.
+**Headers (Same as Web):**
+```javascript
+{
+  "Content-Type": "application/json",
+  "Authorization": "Bearer JWT_TOKEN"  // ← Required (same as web)
+}
+```
+
+**Note:** Mobile FCM tokens use the same authentication pattern as web tokens - JWT token in Authorization header.
 
 ## 👤 User Types Supported
 
@@ -138,7 +146,7 @@ The FCM token endpoints support both **authenticated users** and **guest users**
 
 ### Mobile FCM Token Strategy
 
-**Important:** For mobile apps, FCM tokens should be saved **during login** (OTP verification), not as a separate API call. This ensures tokens are associated with authenticated users.
+**Important:** Mobile FCM tokens should be saved **the same way as web tokens** - after user authentication using JWT token. This maintains consistency between web and mobile implementations.
 
 ### Updated Login Flow:
 
@@ -677,3 +685,50 @@ If you encounter issues:
 
 For backend-related issues, contact the backend developer.
 For mobile app issues, refer to Firebase documentation and your app's notification implementation.
+
+---
+
+## 🔄 Correct Mobile FCM Implementation (Same as Web)
+
+### Mobile FCM Token Flow (Same as Web):
+
+```javascript
+// 1. Generate FCM token on app launch
+const fcmToken = await messaging().getToken();
+await AsyncStorage.setItem('fcmToken', fcmToken);
+
+// 2. User logs in (OTP verification)
+const loginResult = await verifyOTP(phone, otp);
+
+// 3. After successful login, save FCM token (same as web)
+await saveFCMTokenAfterLogin();
+
+// 4. Implementation:
+async function saveFCMTokenAfterLogin() {
+  const userToken = await AsyncStorage.getItem('userToken');
+  const fcmToken = await AsyncStorage.getItem('fcmToken');
+
+  if (!userToken || !fcmToken) return;
+
+  await fetch('/api/user/auth/save-fcm-token', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${userToken}`  // Same as web
+    },
+    body: JSON.stringify({
+      token: fcmToken,
+      platform: 'mobile'  // Separate from web
+    })
+  });
+}
+```
+
+### Key Points:
+- ✅ **Same authentication pattern as web**
+- ✅ **JWT token required in headers**
+- ✅ **Separate platform identification**
+- ✅ **No mixing with login flow**
+- ✅ **Called after successful login**
+
+This ensures mobile FCM tokens are generated and saved exactly like web tokens! 🎯
