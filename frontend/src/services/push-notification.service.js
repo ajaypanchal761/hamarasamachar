@@ -131,8 +131,9 @@ export const setupForegroundNotificationHandler = (callback) => {
         payload.notification?.title || 'हमारा समाचार',
         {
           body: payload.notification?.body || 'नई अधिसूचना',
-          icon: '/favicon.png',
+          icon: payload.data?.image || '/favicon.png',
           badge: '/favicon.png',
+          image: payload.data?.image || undefined, // For rich notifications with image
           data: payload.data || {},
           tag: payload.data?.id || 'general', // Prevents duplicate notifications
           requireInteraction: true, // Keep notification visible until user interacts

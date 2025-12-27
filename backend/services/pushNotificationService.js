@@ -1,6 +1,16 @@
 import { sendNotificationToAllUsers, sendNotificationToUser } from './firebaseAdmin.js';
 import Notification from '../models/Notification.js';
 
+// Helper function to truncate content to approximately 20 words
+const truncateContent = (content, maxWords = 20) => {
+  if (!content) return '';
+
+  const words = content.trim().split(/\s+/);
+  if (words.length <= maxWords) return content.trim();
+
+  return words.slice(0, maxWords).join(' ') + '...';
+};
+
 // Helper function to store notification in database
 const storeNotification = async (userIds, notificationData) => {
   try {
@@ -14,7 +24,9 @@ const storeNotification = async (userIds, notificationData) => {
         epaperId: notificationData.data?.epaperId,
         category: notificationData.data?.category,
         url: notificationData.url,
-        priority: notificationData.data?.priority || 'normal'
+        priority: notificationData.data?.priority || 'normal',
+        image: notificationData.data?.image || '',
+        content: notificationData.data?.content || ''
       }
     }));
 
@@ -38,6 +50,8 @@ const sendBreakingNewsNotification = async (newsData) => {
         newsId: newsData._id?.toString() || '',
         category: newsData.category || '',
         priority: 'high',
+        image: newsData.featuredImage || '',
+        content: truncateContent(newsData.content, 20),
       },
     };
 
@@ -67,6 +81,8 @@ const sendNewNewsNotification = async (newsData, targetUsers = null) => {
         category: newsData.category || '',
         district: newsData.district || '',
         priority: 'normal',
+        image: newsData.featuredImage || '',
+        content: truncateContent(newsData.content, 20),
       },
     };
 

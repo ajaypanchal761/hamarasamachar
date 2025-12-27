@@ -137,6 +137,7 @@ const sendPushNotification = async (tokens, payload) => {
     notification: {
       title: payload.title,
       body: payload.body,
+      image: payload.data?.image || undefined, // Add image for rich notifications
     },
     data: stringifyData({
       type: payload.type || 'general',
@@ -146,6 +147,12 @@ const sendPushNotification = async (tokens, payload) => {
       ...payload.data,
     }),
     webpush: {
+      notification: {
+        icon: payload.data?.image || '/favicon.png',
+        image: payload.data?.image || undefined,
+        badge: '/favicon.png',
+        requireInteraction: true,
+      },
       fcm_options: {
         link: payload.url || '/',
       },

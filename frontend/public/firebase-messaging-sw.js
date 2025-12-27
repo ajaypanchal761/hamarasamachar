@@ -24,8 +24,9 @@ messaging.onBackgroundMessage((payload) => {
   const notificationTitle = payload.notification?.title || payload.data?.title || 'हमारा समाचार';
   const notificationOptions = {
     body: payload.notification?.body || payload.data?.body || 'नई अधिसूचना',
-    icon: '/favicon.png',
+    icon: payload.data?.image || '/favicon.png',
     badge: '/favicon.png',
+    image: payload.data?.image || undefined, // Add rich notification image
     data: payload.data || {},
     tag: payload.data?.id || 'general', // Prevents duplicate notifications
     requireInteraction: false, // Auto-close notification
