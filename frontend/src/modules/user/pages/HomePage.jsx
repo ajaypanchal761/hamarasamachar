@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import Header from '../components/Header';
 import BreakingNewsBanner from '../components/BreakingNewsBanner';
 import CategoryMenu from '../components/CategoryMenu';
@@ -242,8 +243,42 @@ function HomePage() {
     }
   };
 
+  // Generate dynamic meta title and description
+  const getMetaTitle = () => {
+    if (selectedCategory && selectedCategory !== 'सभी') {
+      if (selectedDistrict && selectedDistrict !== 'सभी जिले') {
+        return `${selectedCategory} - ${selectedDistrict} | Hamara Samachar`;
+      }
+      return `${selectedCategory} | Hamara Samachar`;
+    }
+    return 'Hamara Samachar - राजस्थान और भारत की ताजा खबरें';
+  };
+
+  const getMetaDescription = () => {
+    if (selectedCategory && selectedCategory !== 'सभी') {
+      if (selectedDistrict && selectedDistrict !== 'सभी जिले') {
+        return `${selectedCategory} श्रेणी में ${selectedDistrict} से ताजा समाचार पढ़ें। राजस्थान और भारत की सभी महत्वपूर्ण खबरें।`;
+      }
+      return `${selectedCategory} श्रेणी की ताजा खबरें पढ़ें। राजस्थान और भारत की महत्वपूर्ण समाचार।`;
+    }
+    return 'हामारा समाचार - राजस्थान और भारत की ताजा खबरें, ब्रेकिंग न्यूज़, राजनीति, क्राइम, खेलकूद और अन्य सभी श्रेणियों में अपडेट।';
+  };
+
   return (
     <div className="min-h-screen bg-white">
+      {/* Dynamic SEO Meta Tags */}
+      <Helmet>
+        <title>{getMetaTitle()}</title>
+        <meta name="description" content={getMetaDescription()} />
+        <meta property="og:title" content={getMetaTitle()} />
+        <meta property="og:description" content={getMetaDescription()} />
+        <meta property="og:url" content={window.location.href} />
+        <meta property="og:type" content="website" />
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:title" content={getMetaTitle()} />
+        <meta name="twitter:description" content={getMetaDescription()} />
+      </Helmet>
+
       <div className="page-transition">
         {/* Header */}
         <Header />

@@ -273,8 +273,25 @@ function NewsCard({ news, isInBookmarkPage = false }) {
       <div className="bg-white border-b border-gray-100 py-3 sm:py-4 mb-0 mx-0 overflow-hidden">
         {/* Media and Heading Stacked */}
         <div className="flex flex-col gap-3 cursor-pointer" onClick={handleCardClick}>
-
-          {/* Top - Video/Photo (Full Width) */}
+      
+        <div className="w-full">
+            {/* Title: Before Colon Colored, After Colon Black */}
+            <h3 className="text-base sm:text-lg font-semibold leading-snug mt-2">
+              {hasColon ? (
+                <>
+                  <span style={{ color: headingColor }}>{beforeColon}</span>
+                  {afterColon && (
+                    <>
+                      <span className="text-black"> {colonChar} </span>
+                      <span className="text-black">{afterColon}</span>
+                    </>
+                  )}
+                </>
+              ) : (
+                <span style={{ color: headingColor }}>{beforeColon}</span>
+              )}
+            </h3>
+          </div>
           <div
             className={`w-full aspect-video rounded-lg overflow-hidden relative bg-gray-100 ${isVideo ? 'cursor-pointer' : ''}`}
             onClick={isVideo ? handleVideoClick : undefined}
@@ -330,24 +347,7 @@ function NewsCard({ news, isInBookmarkPage = false }) {
           </div>
 
           {/* Bottom - Text Content */}
-          <div className="w-full">
-            {/* Title: Before Colon Colored, After Colon Black */}
-            <h3 className="text-base sm:text-lg font-semibold leading-snug mt-2">
-              {hasColon ? (
-                <>
-                  <span style={{ color: headingColor }}>{beforeColon}</span>
-                  {afterColon && (
-                    <>
-                      <span className="text-black"> {colonChar} </span>
-                      <span className="text-black">{afterColon}</span>
-                    </>
-                  )}
-                </>
-              ) : (
-                <span style={{ color: headingColor }}>{beforeColon}</span>
-              )}
-            </h3>
-          </div>
+        
         </div>
 
         {/* Category and Menu - Aligned together */}

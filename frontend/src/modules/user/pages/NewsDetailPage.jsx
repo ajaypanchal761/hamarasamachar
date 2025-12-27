@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { getNewsById as fetchNewsById } from '../services/newsService';
 import BottomNavbar from '../components/BottomNavbar';
 import ContentSection from '../components/ContentSection';
@@ -492,8 +493,62 @@ function NewsDetailPage() {
   // Get content sections from news data
   const contentSections = getContentSections(news);
 
+  // Only render Helmet when news data is available
+  const renderHelmet = () => {
+    if (!news) return null;
+
+    return (
+      <Helmet>
+        <title>{news.title ? `${news.title} | Hamara Samachar` : 'Hamara Samachar'}</title>
+        <meta
+          name="description"
+          content={news.metaDescription || news.description || 'हामारा समाचार - राजस्थान और भारत की ताजा खबरें पढ़ें'}
+        />
+        <meta
+          property="og:title"
+          content={news.title || 'Hamara Samachar'}
+        />
+        <meta
+          property="og:description"
+          content={news.metaDescription || news.description || 'हामारा समाचार - राजस्थान और भारत की ताजा खबरें पढ़ें'}
+        />
+        <meta
+          property="og:image"
+          content={news.image || '/favicon.png'}
+        />
+        <meta
+          property="og:url"
+          content={window.location.href}
+        />
+        <meta
+          property="og:type"
+          content="article"
+        />
+        <meta
+          name="twitter:card"
+          content="summary_large_image"
+        />
+        <meta
+          name="twitter:title"
+          content={news.title || 'Hamara Samachar'}
+        />
+        <meta
+          name="twitter:description"
+          content={news.metaDescription || news.description || 'हामारा समाचार - राजस्थान और भारत की ताजा खबरें पढ़ें'}
+        />
+        <meta
+          name="twitter:image"
+          content={news.image || '/favicon.png'}
+        />
+      </Helmet>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-white">
+      {/* Dynamic SEO Meta Tags */}
+      {renderHelmet()}
+
       <div className="page-transition pb-20 sm:pb-24">
         {/* Header */}
         <div className="sticky top-0 z-10 flex items-center justify-between px-2.5 sm:px-3 py-2 sm:py-2.5 border-b border-gray-200" style={{ backgroundColor: '#E21E26' }}>
@@ -623,6 +678,17 @@ function NewsDetailPage() {
               )}
             </div>
           </div>
+
+          {/* Meta Description (SEO Description) - Display if available */}
+          {news.metaDescription && (
+            <div className="mb-4 sm:mb-5">
+              <div className="bg-gray-50 border-l-4 border-[#E21E26] p-3 sm:p-4 rounded-r-lg">
+                <p className="text-sm sm:text-base text-gray-700 leading-relaxed">
+                  {news.metaDescription}
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Content Sections - Show first section, then blur rest if not logged in */}
           <div className="space-y-4 sm:space-y-5">

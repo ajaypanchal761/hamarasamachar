@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BottomNavbar from '../components/BottomNavbar';
 import { getCurrentUser, updateProfile, deleteAccount } from '../services/authService';
+import { getMyServiceInformation, deleteServiceInformation } from '../services/serviceInformationService';
 import './ProfilePage.css';
 
 function ProfilePage() {
@@ -21,6 +22,8 @@ function ProfilePage() {
     sportsNews: true,
     entertainmentNews: true
   });
+  const [serviceInformation, setServiceInformation] = useState([]);
+  const [showServiceInfoModal, setShowServiceInfoModal] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -99,6 +102,15 @@ function ProfilePage() {
             }
 
             setLoading(false);
+
+            // Load service information for the user
+            try {
+              const serviceInfo = await getMyServiceInformation();
+              setServiceInformation(serviceInfo);
+            } catch (error) {
+              console.error('Error loading service information:', error);
+            }
+
             return;
           }
         }
@@ -305,6 +317,17 @@ function ProfilePage() {
         </svg>
       ),
       action: () => navigate('/feedback')
+    },
+    {
+      id: 'service-info',
+      label: 'सेवा सूचना',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      ),
+      action: () => setShowServiceInfoModal(true),
+      badge: serviceInformation.length > 0 ? serviceInformation.length : null
     }
   ];
 
@@ -399,6 +422,16 @@ function ProfilePage() {
       // Revert on error
       setNotificationSettings(notificationSettings);
       alert('नोटिफिकेशन सेटिंग्स सेव करने में समस्या हुई। कृपया पुनः प्रयास करें।');
+    }
+  };
+
+  const handleDeleteServiceInfo = async (id) => {
+    try {
+      await deleteServiceInformation(id);
+      setServiceInformation(serviceInformation.filter(info => info.id !== id));
+    } catch (error) {
+      console.error('Error deleting service information:', error);
+      alert('सेवा सूचना हटाने में समस्या हुई। कृपया पुनः प्रयास करें।');
     }
   };
 
@@ -718,6 +751,115 @@ function ProfilePage() {
               <button
                 onClick={() => setShowNotificationSettings(false)}
                 className="w-full py-3 px-4 bg-[#E21E26] text-white font-semibold rounded-xl hover:bg-[#c21a20] transition-colors"
+              >
+                ठीक है
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Service Information Modal */}
+      {showServiceInfoModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-md animate-fade-in">
+          <div className="bg-white rounded-2xl shadow-2xl shadow-black/20 w-full max-w-4xl max-h-[90vh] sm:max-h-[85vh] flex flex-col border border-gray-200/50 transform transition-all scale-100 animate-slide-up">
+            <div className="flex items-center justify-between p-6 border-b border-gray-100/80 flex-shrink-0 bg-gradient-to-r from-red-50/50 to-white">
+              <h3 className="text-xl font-bold text-gray-900 pr-3 tracking-tight">
+                सेवा सूचना
+              </h3>
+              <button
+                onClick={() => setShowServiceInfoModal(false)}
+                className="p-2 text-gray-400 hover:text-gray-600 rounded-xl hover:bg-gray-100/80 transition-all duration-200 flex-shrink-0 group"
+              >
+                <svg className="w-5 h-5 group-hover:scale-110 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="p-6 overflow-y-auto flex-1 min-h-0 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 hover:scrollbar-thumb-gray-400 scrollbar-thumb-rounded-full scrollbar-track-rounded-full">
+              {serviceInformation.length === 0 ? (
+                <div className="text-center py-16">
+                  <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-900 mb-2">कोई सेवा सूचना नहीं</h3>
+                  <p className="text-sm text-gray-500 max-w-sm mx-auto leading-relaxed">
+                    अभी आपके लिए कोई सेवा सूचना नहीं है। जब कोई नई सूचना आएगी तो यहाँ दिखाई देगी।
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {serviceInformation.map((info) => (
+                    <div key={info.id} className="bg-white border-2 border-gray-100 rounded-xl p-6 shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-200">
+                      <div className="flex items-start justify-between mb-6">
+                        <div className="flex-1 pr-4">
+                          <div className="flex items-center gap-2 mb-4">
+                            <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                              <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                            </div>
+                            <h4 className="font-bold text-gray-900 text-lg leading-tight">{info.title}</h4>
+                          </div>
+                          <div className="bg-gray-50 border border-gray-200 p-5 rounded-xl">
+                            <p className="text-gray-800 whitespace-pre-wrap leading-relaxed text-sm sm:text-base">{info.message}</p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleDeleteServiceInfo(info.id)}
+                          className="p-3 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-xl transition-all duration-200 flex-shrink-0 shadow-sm hover:shadow-md"
+                          title="सेवा सूचना हटाएं"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-4 border-t border-gray-100">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                            <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                          </div>
+                          <div>
+                            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">प्राप्त तिथि</p>
+                            <p className="text-sm font-semibold text-gray-800">
+                              {new Date(info.createdAt).toLocaleDateString('hi-IN', {
+                                day: 'numeric',
+                                month: 'short',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                            <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                          </div>
+                          <div>
+                            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">प्रेषक</p>
+                            <p className="text-sm font-semibold text-gray-800">व्यवस्थापक</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="p-6 border-t border-gray-100/80 bg-gradient-to-r from-gray-50/30 to-white rounded-b-2xl flex-shrink-0">
+              <button
+                onClick={() => setShowServiceInfoModal(false)}
+                className="w-full py-3 px-6 bg-gradient-to-r from-red-600 to-red-700 text-white font-bold rounded-xl hover:from-red-700 hover:to-red-800 transition-all duration-200 text-sm sm:text-base shadow-sm hover:shadow-lg transform hover:scale-[1.02]"
               >
                 ठीक है
               </button>

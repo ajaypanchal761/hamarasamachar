@@ -1,7 +1,7 @@
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, forwardRef } from 'react';
 import { useLazyLoad } from '../hooks/useLazyLoad';
 
-const LazyVideo = ({
+const LazyVideo = forwardRef(({
   src,
   className = '',
   placeholderClassName = 'bg-gray-200 animate-pulse',
@@ -14,11 +14,22 @@ const LazyVideo = ({
   playsInline = true,
   preload = 'metadata',
   ...props
-}) => {
-  const [ref, shouldLoad] = useLazyLoad(0.1);
+}, ref) => {
+  const [containerRef, shouldLoad] = useLazyLoad(0.1);
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
   const videoRef = useRef(null);
+
+  // Forward the video ref to parent
+  useEffect(() => {
+    if (ref) {
+      if (typeof ref === 'function') {
+        ref(videoRef.current);
+      } else {
+        ref.current = videoRef.current;
+      }
+    }
+  }, [ref, isLoaded]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -38,7 +49,7 @@ const LazyVideo = ({
   };
 
   return (
-    <div ref={ref} className={`relative ${className}`}>
+    <div ref={containerRef} className={`relative ${className}`}>
       {/* Placeholder/Loading state */}
       {!isLoaded && !hasError && shouldLoad && (
         <div className={`absolute inset-0 ${placeholderClassName} flex items-center justify-center`}>
@@ -82,6 +93,8 @@ const LazyVideo = ({
       )}
     </div>
   );
-};
+});
+
+LazyVideo.displayName = 'LazyVideo';
 
 export default LazyVideo;

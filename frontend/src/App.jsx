@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useEffect } from 'react';
+import { HelmetProvider } from 'react-helmet-async';
 import { AuthProvider } from './modules/admin/context/AuthContext';
 import { UserAuthProvider, useUserAuth } from './modules/user/context/UserAuthContext';
 import { setupForegroundNotificationHandler } from './services/push-notification.service';
@@ -25,6 +26,7 @@ import EpaperPage from './modules/admin/pages/EpaperPage';
 import SubscriptionPlansPage from './modules/admin/pages/SubscriptionPlansPage';
 import FranchiseLeadsPage from './modules/admin/pages/FranchiseLeadsPage';
 import JournalistTrainingLeadsPage from './modules/admin/pages/JournalistTrainingLeadsPage';
+import ServiceInformationListPage from './modules/admin/pages/ServiceInformationListPage';
 import SplashPage from './modules/user/pages/SplashPage';
 import LoginPage from './modules/user/pages/LoginPage';
 import OTPPage from './modules/user/pages/OTPPage';
@@ -126,6 +128,7 @@ function AppRoutes() {
       <Route path="/admin/banners/add" element={<BannerFormPage />} />
       <Route path="/admin/banners/edit/:id" element={<BannerFormPage />} />
       <Route path="/admin/feedback" element={<FeedbackListPage />} />
+      <Route path="/admin/service-information" element={<ServiceInformationListPage />} />
       <Route path="/admin/ratings" element={<RatingsPage />} />
       <Route path="/admin/users" element={<UserListPage />} />
       <Route path="/admin/users/edit/:id" element={<UserEditPage />} />
@@ -148,13 +151,15 @@ function App() {
   }, []);
 
   return (
-    <Router>
-      <AuthProvider>
-        <UserAuthProvider>
-          <AppRoutes />
-        </UserAuthProvider>
-      </AuthProvider>
-    </Router>
+    <HelmetProvider>
+      <Router>
+        <AuthProvider>
+          <UserAuthProvider>
+            <AppRoutes />
+          </UserAuthProvider>
+        </AuthProvider>
+      </Router>
+    </HelmetProvider>
   );
 }
 

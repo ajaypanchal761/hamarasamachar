@@ -74,7 +74,8 @@ export const getAllNews = async (req, res) => {
 export const getNewsById = async (req, res) => {
   try {
     const news = await News.findById(req.params.id)
-      .populate('category', 'name slug icon color');
+      .populate('category', 'name slug icon color')
+      .select('title featuredImage videoUrl isBreakingNews author publishDate status content metaDescription tags district views category');
 
     if (!news || news.status !== 'published') {
       return res.status(404).json({

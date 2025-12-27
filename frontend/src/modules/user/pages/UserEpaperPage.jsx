@@ -192,21 +192,21 @@ function UserEpaperPage() {
                     downloadUrl = `${pdfUrl}?fl_attachment=${encodeURIComponent(fileName)}`;
                 }
             }
-            
+
             // Try method 1: Direct download with fetch (works for most cases)
             try {
                 const response = await fetch(downloadUrl, {
                     method: 'GET',
                     mode: 'cors',
                 });
-                
+
                 if (!response.ok) {
                     throw new Error('Failed to fetch PDF');
                 }
-                
+
                 // Convert response to blob
                 const blob = await response.blob();
-                
+
                 // Create download link
                 const url = window.URL.createObjectURL(blob);
                 const link = document.createElement('a');
@@ -215,7 +215,7 @@ function UserEpaperPage() {
                 link.style.display = 'none';
                 document.body.appendChild(link);
                 link.click();
-                
+
                 // Cleanup
                 setTimeout(() => {
                     document.body.removeChild(link);

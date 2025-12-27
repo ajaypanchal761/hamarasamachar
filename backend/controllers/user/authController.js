@@ -31,6 +31,14 @@ export const sendOTP = async (req, res) => {
     const otpRecord = await OTP.createOTP({ otp, phone: normalizedPhone, purpose });
 
     if (!smsHubIndiaService.isConfigured()) {
+      // In development mode, allow OTP without SMS configuration
+      if (process.env.NODE_ENV !== 'production') {
+        return res.json({
+          success: true,
+          message: 'OTP generated (development mode)',
+          otp: otp // Return OTP for development testing
+        });
+      }
       await OTP.findByIdAndDelete(otpRecord._id);
       return res.status(500).json({ success: false, message: 'SMS service is not configured' });
     }

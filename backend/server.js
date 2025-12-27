@@ -18,6 +18,7 @@ import adminEpaperRoutes from './routes/admin/epaperRoutes.js';
 import adminDashboardRoutes from './routes/admin/dashboardRoutes.js';
 import adminPlanRoutes from './routes/admin/planRoutes.js';
 import adminFranchiseLeadRoutes from './routes/admin/franchiseLeadRoutes.js';
+import adminServiceInformationRoutes from './routes/admin/serviceInformationRoutes.js';
 import debugRoutes from './routes/debugRoutes.js';
 
 import userAuthRoutes from './routes/user/authRoutes.js';
@@ -32,6 +33,7 @@ import userPaymentRoutes from './routes/user/paymentRoutes.js';
 import userPlanRoutes from './routes/user/planRoutes.js';
 import userFranchiseLeadRoutes from './routes/user/franchiseLeadRoutes.js';
 import userNotificationRoutes from './routes/user/notificationRoutes.js';
+import userServiceInformationRoutes from './routes/user/serviceInformationRoutes.js';
 
 // Import middleware
 import { errorHandler } from './middlewares/errorHandler.js';
@@ -123,6 +125,7 @@ app.use('/api/admin/epaper', adminEpaperRoutes);
 app.use('/api/admin/dashboard', adminDashboardRoutes);
 app.use('/api/admin/plans', adminPlanRoutes);
 app.use('/api/admin/franchise-leads', adminFranchiseLeadRoutes);
+app.use('/api/admin/service-information', adminServiceInformationRoutes);
 
 // User Routes
 app.use('/api/user/auth', userAuthRoutes);
@@ -137,6 +140,7 @@ app.use('/api/user/payment', userPaymentRoutes);
 app.use('/api/user/plans', userPlanRoutes);
 app.use('/api/user/franchise-leads', userFranchiseLeadRoutes);
 app.use('/api/user/notifications', userNotificationRoutes);
+app.use('/api/user/service-information', userServiceInformationRoutes);
 
 // Error handling middleware
 app.use(errorHandler);

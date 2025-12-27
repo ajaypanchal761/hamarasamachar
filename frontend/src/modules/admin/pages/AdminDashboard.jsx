@@ -132,6 +132,23 @@ function AdminDashboard() {
             >
               श्रेणियाँ प्रबंधित करें
             </button>
+            <button
+              onClick={() => navigate('/admin/service-information')}
+              className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-semibold text-xs sm:text-sm border-2 transition-all"
+              style={{
+                borderColor: COLORS.header.bg,
+                color: COLORS.header.bg,
+                backgroundColor: 'transparent'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.backgroundColor = '#F0F9FF';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.backgroundColor = 'transparent';
+              }}
+            >
+              सेवा सूचना प्रबंधित करें
+            </button>
           </div>
 
           {/* Statistics Grid */}
