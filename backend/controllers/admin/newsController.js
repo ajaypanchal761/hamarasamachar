@@ -208,6 +208,7 @@ export const createNews = async (req, res) => {
             _id: news._id,
             title: news.title,
             category: news.category?.slug || '',
+            featuredImage: news.featuredImage || '',
           });
           } else {
           // Send new news notification to all users
@@ -216,6 +217,7 @@ export const createNews = async (req, res) => {
             title: news.title,
             category: news.category?.slug || '',
             district: news.district || '',
+            featuredImage: news.featuredImage || '',
           });
           // Send category-based notification to users interested in this category
           // await sendCategoryBasedNotification({
@@ -375,6 +377,7 @@ export const updateNews = async (req, res) => {
             _id: news._id,
             title: news.title,
             category: news.category?.slug || '',
+            featuredImage: news.featuredImage || '',
           });
           } else {
           // Send new news notification to all users
@@ -383,6 +386,7 @@ export const updateNews = async (req, res) => {
             title: news.title,
             category: news.category?.slug || '',
             district: news.district || '',
+            featuredImage: news.featuredImage || '',
           });
           // Send category-based notification to users interested in this category
           await sendCategoryBasedNotification({
@@ -390,6 +394,7 @@ export const updateNews = async (req, res) => {
             title: news.title,
             categorySlug: news.category?.slug || '',
             district: news.district || '',
+            featuredImage: news.featuredImage || '',
           });
           }
       } catch (notificationError) {

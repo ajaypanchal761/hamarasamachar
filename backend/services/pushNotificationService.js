@@ -40,6 +40,11 @@ const storeNotification = async (userIds, notificationData) => {
 // Send breaking news notification
 const sendBreakingNewsNotification = async (newsData) => {
   try {
+    const imageUrl = newsData.featuredImage || '';
+    console.log('🖼️ [BREAKING NEWS DEBUG] News ID:', newsData._id?.toString());
+    console.log('🖼️ [BREAKING NEWS DEBUG] Featured Image:', imageUrl);
+    console.log('🖼️ [BREAKING NEWS DEBUG] Image URL exists:', !!imageUrl);
+
     const payload = {
       title: '🚨 ब्रेकिंग न्यूज़',
       body: newsData.title || 'नई ब्रेकिंग न्यूज़ प्रकाशित हुई है',
@@ -50,10 +55,12 @@ const sendBreakingNewsNotification = async (newsData) => {
         newsId: newsData._id?.toString() || '',
         category: newsData.category || '',
         priority: 'high',
-        image: newsData.featuredImage || '',
+        image: imageUrl,
         content: truncateContent(newsData.content, 20),
       },
     };
+
+    console.log('📤 [BREAKING NEWS DEBUG] FCM Payload data.image:', payload.data.image);
 
     const result = await sendNotificationToAllUsers(payload);
 
@@ -70,6 +77,11 @@ const sendBreakingNewsNotification = async (newsData) => {
 // Send new news notification
 const sendNewNewsNotification = async (newsData, targetUsers = null) => {
   try {
+    const imageUrl = newsData.featuredImage || '';
+    console.log('🖼️ [NEWS DEBUG] News ID:', newsData._id?.toString());
+    console.log('🖼️ [NEWS DEBUG] Featured Image:', imageUrl);
+    console.log('🖼️ [NEWS DEBUG] Image URL exists:', !!imageUrl);
+
     const payload = {
       title: '📰 नई खबर',
       body: newsData.title || 'नई खबर प्रकाशित हुई है',
@@ -81,10 +93,12 @@ const sendNewNewsNotification = async (newsData, targetUsers = null) => {
         category: newsData.category || '',
         district: newsData.district || '',
         priority: 'normal',
-        image: newsData.featuredImage || '',
+        image: imageUrl,
         content: truncateContent(newsData.content, 20),
       },
     };
+
+    console.log('📤 [NEWS DEBUG] FCM Payload data.image:', payload.data.image);
 
     if (targetUsers) {
       // Send to specific users

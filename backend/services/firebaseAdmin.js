@@ -133,11 +133,16 @@ const sendPushNotification = async (tokens, payload) => {
   };
 
   // Prepare the message payload
+  const imageUrl = payload.data?.image || '';
+  console.log('📤 [FCM PAYLOAD DEBUG] Preparing FCM message');
+  console.log('📤 [FCM PAYLOAD DEBUG] Image URL:', imageUrl);
+  console.log('📤 [FCM PAYLOAD DEBUG] Tokens count:', uniqueTokens.length);
+
   const message = {
     notification: {
       title: payload.title,
       body: payload.body,
-      image: payload.data?.image || undefined, // Add image for rich notifications
+      image: imageUrl || undefined, // Add image for rich notifications
     },
     data: stringifyData({
       type: payload.type || 'general',
@@ -148,8 +153,8 @@ const sendPushNotification = async (tokens, payload) => {
     }),
     webpush: {
       notification: {
-        icon: payload.data?.image || '/favicon.png',
-        image: payload.data?.image || undefined,
+        icon: imageUrl || '/favicon.png',
+        image: imageUrl || undefined,
         badge: '/favicon.png',
         requireInteraction: true,
       },
@@ -158,6 +163,12 @@ const sendPushNotification = async (tokens, payload) => {
       },
     },
   };
+
+  console.log('📤 [FCM PAYLOAD DEBUG] Final message structure:');
+  console.log('📤 [FCM PAYLOAD DEBUG] - notification.image:', message.notification.image);
+  console.log('📤 [FCM PAYLOAD DEBUG] - data.image:', message.data.image);
+  console.log('📤 [FCM PAYLOAD DEBUG] - webpush.icon:', message.webpush.notification.icon);
+  console.log('📤 [FCM PAYLOAD DEBUG] - webpush.image:', message.webpush.notification.image);
 
   try {
     // Ensure admin is loaded
@@ -178,8 +189,9 @@ const sendPushNotification = async (tokens, payload) => {
 
     const results = await admin.messaging().sendEach(messages);
 
-    console.log(`Push notification sent successfully:`);
-    console.log(`- Total messages: ${results.responses.length}`);
+    console.log(`📤 [FCM RESULT] Push notification sent successfully:`);
+    console.log(`📤 [FCM RESULT] - Total messages: ${results.responses.length}`);
+    console.log(`📤 [FCM RESULT] - Image URL sent: ${imageUrl}`);
 
     // Handle responses from sendEach
     let successCount = 0;
@@ -189,15 +201,18 @@ const sendPushNotification = async (tokens, payload) => {
     results.responses.forEach((response, index) => {
       if (response.success) {
         successCount++;
+        console.log(`✅ [FCM RESULT] Token ${index + 1}: SUCCESS`);
       } else {
         failureCount++;
-        console.error(`Token ${uniqueTokens[index]} failed:`, response.error);
+        console.error(`❌ [FCM RESULT] Token ${index + 1} failed:`, response.error?.message);
         failedTokens.push(uniqueTokens[index]);
       }
     });
 
-    console.log(`- Success count: ${successCount}`);
-    console.log(`- Failure count: ${failureCount}`);
+    console.log(`📤 [FCM RESULT] - Success count: ${successCount}`);
+    console.log(`📤 [FCM RESULT] - Failure count: ${failureCount}`);
+    console.log(`📤 [FCM RESULT] - Web tokens: ${successCount} (if web tokens were sent)`);
+    console.log(`📤 [FCM RESULT] - Mobile tokens: ${successCount} (if mobile tokens were sent)`);
 
     // Handle failed tokens (could be expired or invalid)
     if (failureCount > 0) {
@@ -299,6 +314,8 @@ const sendNotificationToUsers = async (userIds, payload) => {
 // Send notification to all users (use with caution)
 const sendNotificationToAllUsers = async (payload) => {
   console.log('👥 [FIREBASE DEBUG] sendNotificationToAllUsers called with payload type:', payload?.type);
+  console.log('👥 [FIREBASE DEBUG] Payload image URL:', payload?.data?.image || 'No image');
+
   try {
     const User = (await import('../models/User.js')).default;
     const users = await User.find({ status: 'Active' });
@@ -307,21 +324,33 @@ const sendNotificationToAllUsers = async (payload) => {
     const allTokens = [];
     const usersToNotify = [];
     let usersWithNotifications = 0;
+    let webTokensCount = 0;
+    let mobileTokensCount = 0;
 
     users.forEach(user => {
       // Only send to users who have push notifications enabled
       if (user.notificationSettings?.pushNotifications !== false) {
-        const userTokens = [...user.fcmTokens, ...user.fcmTokenMobile];
+        const webTokens = user.fcmTokens || [];
+        const mobileTokens = user.fcmTokenMobile || [];
+        const userTokens = [...webTokens, ...mobileTokens];
+
         allTokens.push(...userTokens);
+        webTokensCount += webTokens.length;
+        mobileTokensCount += mobileTokens.length;
+
         if (userTokens.length > 0) {
           usersWithNotifications++;
           usersToNotify.push(user._id);
+          console.log(`👤 [TOKEN DEBUG] User ${user._id}: Web tokens: ${webTokens.length}, Mobile tokens: ${mobileTokens.length}`);
         }
       }
     });
 
     console.log('🔑 [FIREBASE DEBUG] Users with push notifications enabled:', usersWithNotifications);
     console.log('🔑 [FIREBASE DEBUG] Total FCM tokens found:', allTokens.length);
+    console.log('🔑 [FIREBASE DEBUG] - Web tokens:', webTokensCount);
+    console.log('🔑 [FIREBASE DEBUG] - Mobile tokens:', mobileTokensCount);
+    console.log('🔑 [FIREBASE DEBUG] Image URL being sent:', payload?.data?.image || 'No image');
 
     if (allTokens.length === 0) {
       console.log('⚠️ [FIREBASE DEBUG] No FCM tokens found for active users');
@@ -343,3 +372,5 @@ export {
   sendNotificationToUsers,
   sendNotificationToAllUsers,
 };
+
+
