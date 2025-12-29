@@ -21,6 +21,8 @@ function NewsFormPage() {
 
     const [loading, setLoading] = useState(false);
     const [categories, setCategories] = useState([]);
+    const [thumbnailFile, setThumbnailFile] = useState(null);
+    const [thumbnailPreview, setThumbnailPreview] = useState(null);
     const [mediaFile, setMediaFile] = useState(null);
     const [mediaPreview, setMediaPreview] = useState(null);
     const [mediaType, setMediaType] = useState(null); // 'image' or 'video'
@@ -85,13 +87,15 @@ function NewsFormPage() {
                             metaDescription: news.metaDescription || '',
                             tags: news.tags || ''
                         });
-                        // Set preview
+                        // Set thumbnail preview (for push notification thumbnail)
+                        if (news.featuredImage) {
+                            setThumbnailPreview(news.featuredImage);
+                        }
+
+                        // Set media preview (for optional additional media)
                         if (news.videoUrl) {
                             setMediaPreview(news.videoUrl);
                             setMediaType('video');
-                        } else if (news.featuredImage) {
-                            setMediaPreview(news.featuredImage);
-                            setMediaType('image');
                         }
                     }
                 } catch (error) {
@@ -120,6 +124,37 @@ function NewsFormPage() {
     const handleEditorChange = (html) => {
         setFormData(prev => ({ ...prev, content: html }));
         // NO auto-save here - manual save only via Update button
+    };
+
+    const handleThumbnailFileChange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Check if it's an image
+        const isImage = file.type.startsWith('image/');
+        const imageExts = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+        const fileExt = file.name.split('.').pop().toLowerCase();
+
+        if (!isImage && !imageExts.includes(fileExt)) {
+            showToast('अमान्य फ़ाइल प्रकार। केवल छवियाँ अपलोड करें।', 'error');
+            return;
+        }
+
+        // Check file size (10MB max for thumbnails)
+        const maxSize = 10 * 1024 * 1024; // 10MB
+        if (file.size > maxSize) {
+            showToast('फ़ाइल का आकार 10MB से कम होना चाहिए', 'error');
+            return;
+        }
+
+        setThumbnailFile(file);
+        const imageURL = URL.createObjectURL(file);
+        setThumbnailPreview(imageURL);
+    };
+
+    const handleRemoveThumbnail = () => {
+        setThumbnailFile(null);
+        setThumbnailPreview(null);
     };
 
     const handleMediaFileChange = (e) => {
@@ -154,14 +189,14 @@ function NewsFormPage() {
             const videoURL = URL.createObjectURL(file);
             setMediaPreview(videoURL);
             // Clear image URL
-            setFormData(prev => ({ ...prev, featuredImage: '', videoUrl: '' }));
+            setFormData(prev => ({ ...prev, videoUrl: '' }));
         } else {
             setMediaType('image');
             // Create preview URL for image
             const imageURL = URL.createObjectURL(file);
             setMediaPreview(imageURL);
             // Clear video URL
-            setFormData(prev => ({ ...prev, videoUrl: '', featuredImage: '' }));
+            setFormData(prev => ({ ...prev, videoUrl: '' }));
         }
     };
 
@@ -180,6 +215,12 @@ function NewsFormPage() {
             return;
         }
 
+        // Validate thumbnail (mandatory for push notifications)
+        if (!thumbnailFile && !formData.featuredImage) {
+            showToast('कृपया समाचार थंबनेल अपलोड करें या URL दर्ज करें (Push Notifications के लिए आवश्यक)', 'error');
+            return;
+        }
+
         setLoading(true);
         try {
             const newsData = {
@@ -187,7 +228,12 @@ function NewsFormPage() {
                 isBreakingNews: formData.isBreakingNews ? 'true' : 'false'
             };
 
-            // Add media file if uploaded
+            // Add thumbnail file if uploaded (mandatory for notifications)
+            if (thumbnailFile) {
+                newsData.thumbnailFile = thumbnailFile;
+            }
+
+            // Add media file if uploaded (optional)
             if (mediaFile) {
                 newsData.mediaFile = mediaFile;
             }
@@ -291,11 +337,86 @@ function NewsFormPage() {
                                         className="text-lg font-medium"
                                     />
 
-                                    {/* Media Upload Section */}
+                                    {/* News Thumbnail Section - MANDATORY */}
+                                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                                        <label className="block text-sm font-semibold text-yellow-800 mb-3">
+                                            समाचार थंबनेल (News Thumbnail) <span className="text-red-500">*</span>
+                                            <span className="text-xs text-yellow-600 ml-2">(Required for Push Notifications)</span>
+                                        </label>
+                                        <div className="space-y-3">
+                                            {/* File Input */}
+                                            <div className="flex items-center gap-3">
+                                                <label className="flex-1 cursor-pointer">
+                                                    <input
+                                                        type="file"
+                                                        accept="image/*"
+                                                        onChange={handleThumbnailFileChange}
+                                                        className="hidden"
+                                                        id="thumbnail-upload"
+                                                    />
+                                                    <div className="px-4 py-3 border-2 border-dashed border-yellow-300 bg-yellow-25 rounded-lg hover:border-yellow-500 transition-colors text-center">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 mx-auto mb-2 text-yellow-600" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                        </svg>
+                                                        <span className="text-sm text-yellow-700 font-medium">थंबनेल छवि अपलोड करें</span>
+                                                        <p className="text-xs text-yellow-600 mt-1">PNG, JPG, JPEG (Max 10MB)</p>
+                                                    </div>
+                                                </label>
+                                                {thumbnailPreview && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleRemoveThumbnail}
+                                                        className="px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors text-sm"
+                                                    >
+                                                        हटाएं
+                                                    </button>
+                                                )}
+                                            </div>
+
+                                            {/* Preview */}
+                                            {thumbnailPreview && (
+                                                <div className="mt-3 border border-yellow-300 rounded-lg overflow-hidden bg-white">
+                                                    <img
+                                                        src={thumbnailPreview}
+                                                        alt="Thumbnail Preview"
+                                                        className="w-full h-48 object-cover"
+                                                    />
+                                                </div>
+                                            )}
+
+                                            {/* Alternative: URL Input */}
+                                            <div className="pt-2 border-t border-yellow-200">
+                                                <Form.Field
+                                                    label="या थंबनेल URL दर्ज करें (Or Enter Thumbnail URL)"
+                                                    name="thumbnailUrl"
+                                                    value={formData.featuredImage}
+                                                    onChange={(e) => {
+                                                        const url = e.target.value;
+                                                        if (url) {
+                                                            setFormData(prev => ({ ...prev, featuredImage: url }));
+                                                            setThumbnailPreview(url);
+                                                        } else {
+                                                            setFormData(prev => ({ ...prev, featuredImage: '' }));
+                                                            setThumbnailPreview(null);
+                                                        }
+                                                    }}
+                                                    placeholder="Thumbnail image URL दर्ज करें..."
+                                                />
+                                            </div>
+                                        </div>
+                                        <p className="text-xs text-yellow-700 mt-2">
+                                            <strong>नोट:</strong> यह छवि Push Notifications में thumbnail के रूप में दिखाई देगी। कृपया आकर्षक और प्रासंगिक छवि चुनें।
+                                        </p>
+                                    </div>
+
+                                    {/* Media Upload Section - OPTIONAL */}
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                                            मीडिया अपलोड करें (Image/Video Upload)
+                                            अतिरिक्त मीडिया (Optional Image/Video)
                                         </label>
+                                        <p className="text-xs text-gray-500 mb-3">
+                                            थंबनेल के अलावा कोई अतिरिक्त छवि या वीडियो अपलोड करना चाहें तो यहाँ करें
+                                        </p>
                                         <div className="space-y-3">
                                             {/* File Input */}
                                             <div className="flex items-center gap-3">

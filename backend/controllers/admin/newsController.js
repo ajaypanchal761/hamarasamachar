@@ -125,26 +125,34 @@ export const createNews = async (req, res) => {
       tags
     } = req.body;
 
-    // Upload featured image or video if provided
+    // Upload featured image (thumbnail - mandatory) and optional media
     let featuredImage = '';
     let uploadedVideoUrl = '';
-    
-    if (req.file) {
+
+    // Handle thumbnail file (mandatory for push notifications)
+    if (req.files && req.files.thumbnailFile && req.files.thumbnailFile[0]) {
+      const thumbnailFile = req.files.thumbnailFile[0];
+      const result = await uploadToCloudinary(thumbnailFile, 'hamarasamachar/news', 'image');
+      featuredImage = result.secure_url;
+    }
+
+    // Handle optional media file (can be image or video)
+    if (req.files && req.files.mediaFile && req.files.mediaFile[0]) {
+      const mediaFile = req.files.mediaFile[0];
+
       // Check if it's a video file
-      const isVideo = req.file.mimetype && req.file.mimetype.startsWith('video/');
+      const isVideo = mediaFile.mimetype && mediaFile.mimetype.startsWith('video/');
       const videoExts = ['mp4', 'webm', 'ogg', 'mov'];
-      const fileExt = req.file.originalname.split('.').pop().toLowerCase();
+      const fileExt = mediaFile.originalname.split('.').pop().toLowerCase();
       const isVideoByExt = videoExts.includes(fileExt);
-      
+
       if (isVideo || isVideoByExt) {
         // Upload video
-        const result = await uploadToCloudinary(req.file, 'hamarasamachar/news', 'video');
+        const result = await uploadToCloudinary(mediaFile, 'hamarasamachar/news', 'video');
         uploadedVideoUrl = result.secure_url;
-      } else {
-        // Upload image
-        const result = await uploadToCloudinary(req.file, 'hamarasamachar/news', 'image');
-        featuredImage = result.secure_url;
       }
+      // Note: If it's an image, we ignore it since thumbnail is already uploaded
+      // This prevents duplicate image uploads
     }
 
     // Parse tags if string
@@ -178,6 +186,14 @@ export const createNews = async (req, res) => {
       }
     }
 
+    // Validate that featuredImage is provided (mandatory for notifications)
+    if (!featuredImage || featuredImage.trim() === '') {
+      return res.status(400).json({
+        success: false,
+        message: 'Featured image is required for all news articles (used for push notifications)'
+      });
+    }
+
     const news = await News.create({
       title,
       category: categoryId,
@@ -208,6 +224,7 @@ export const createNews = async (req, res) => {
             _id: news._id,
             title: news.title,
             category: news.category?.slug || '',
+            categorySlug: news.category?.slug || 'breaking',
             featuredImage: news.featuredImage || '',
           });
           } else {
@@ -216,6 +233,7 @@ export const createNews = async (req, res) => {
             _id: news._id,
             title: news.title,
             category: news.category?.slug || '',
+            categorySlug: news.category?.slug || 'other',
             district: news.district || '',
             featuredImage: news.featuredImage || '',
           });
@@ -274,14 +292,35 @@ export const updateNews = async (req, res) => {
       tags
     } = req.body;
 
-    // Handle featured image or video upload
-    if (req.file) {
+    // Handle thumbnail file (mandatory for push notifications)
+    if (req.files && req.files.thumbnailFile && req.files.thumbnailFile[0]) {
+      const thumbnailFile = req.files.thumbnailFile[0];
+
+      // Delete old image if exists
+      if (news.featuredImage) {
+        try {
+          const publicId = news.featuredImage.split('/').pop().split('.')[0];
+          await deleteFromCloudinary(`hamarasamachar/news/${publicId}`);
+        } catch (error) {
+          console.error('Error deleting old thumbnail:', error);
+        }
+      }
+
+      // Upload new thumbnail
+      const result = await uploadToCloudinary(thumbnailFile, 'hamarasamachar/news', 'image');
+      news.featuredImage = result.secure_url;
+    }
+
+    // Handle optional media file (can be image or video)
+    if (req.files && req.files.mediaFile && req.files.mediaFile[0]) {
+      const mediaFile = req.files.mediaFile[0];
+
       // Check if it's a video file
-      const isVideo = req.file.mimetype && req.file.mimetype.startsWith('video/');
+      const isVideo = mediaFile.mimetype && mediaFile.mimetype.startsWith('video/');
       const videoExts = ['mp4', 'webm', 'ogg', 'mov'];
-      const fileExt = req.file.originalname.split('.').pop().toLowerCase();
+      const fileExt = mediaFile.originalname.split('.').pop().toLowerCase();
       const isVideoByExt = videoExts.includes(fileExt);
-      
+
       if (isVideo || isVideoByExt) {
         // Delete old video if exists
         if (news.videoUrl) {
@@ -292,25 +331,13 @@ export const updateNews = async (req, res) => {
             console.error('Error deleting old video:', error);
           }
         }
-        
+
         // Upload new video
-        const result = await uploadToCloudinary(req.file, 'hamarasamachar/news', 'video');
+        const result = await uploadToCloudinary(mediaFile, 'hamarasamachar/news', 'video');
         news.videoUrl = result.secure_url;
-      } else {
-        // Delete old image if exists
-        if (news.featuredImage) {
-          try {
-            const publicId = news.featuredImage.split('/').pop().split('.')[0];
-            await deleteFromCloudinary(`hamarasamachar/news/${publicId}`);
-          } catch (error) {
-            console.error('Error deleting old image:', error);
-          }
-        }
-        
-        // Upload new image
-        const result = await uploadToCloudinary(req.file, 'hamarasamachar/news', 'image');
-        news.featuredImage = result.secure_url;
       }
+      // Note: If it's an image, we ignore it since thumbnail is already handled
+      // This prevents confusion between thumbnail and additional images
     }
 
     // Update category news count if category changed
@@ -364,6 +391,15 @@ export const updateNews = async (req, res) => {
 
     // Check if status changed to published
     const oldStatus = news.status;
+
+    // Validate featuredImage for published news
+    if (news.status === 'published' && (!news.featuredImage || news.featuredImage.trim() === '')) {
+      return res.status(400).json({
+        success: false,
+        message: 'Featured image is required for published news articles (used for push notifications)'
+      });
+    }
+
     await news.save();
 
     // Send push notifications if news status changed to published
@@ -377,6 +413,7 @@ export const updateNews = async (req, res) => {
             _id: news._id,
             title: news.title,
             category: news.category?.slug || '',
+            categorySlug: news.category?.slug || 'breaking',
             featuredImage: news.featuredImage || '',
           });
           } else {
@@ -385,6 +422,7 @@ export const updateNews = async (req, res) => {
             _id: news._id,
             title: news.title,
             category: news.category?.slug || '',
+            categorySlug: news.category?.slug || 'other',
             district: news.district || '',
             featuredImage: news.featuredImage || '',
           });

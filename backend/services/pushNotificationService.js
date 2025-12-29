@@ -50,10 +50,11 @@ const sendBreakingNewsNotification = async (newsData) => {
       body: newsData.title || 'नई ब्रेकिंग न्यूज़ प्रकाशित हुई है',
       type: 'breaking_news',
       id: newsData._id?.toString() || '',
-      url: `/news/${newsData._id}`,
+      url: `/category/breaking`, // Open breaking news category page
       data: {
         newsId: newsData._id?.toString() || '',
         category: newsData.category || '',
+        categorySlug: 'breaking',
         priority: 'high',
         image: imageUrl,
         content: truncateContent(newsData.content, 20),
@@ -61,6 +62,8 @@ const sendBreakingNewsNotification = async (newsData) => {
     };
 
     console.log('📤 [BREAKING NEWS DEBUG] FCM Payload data.image:', payload.data.image);
+    console.log('📤 [BREAKING NEWS DEBUG] Category URL:', payload.url);
+    console.log('📤 [BREAKING NEWS DEBUG] Category slug:', payload.data.categorySlug);
 
     const result = await sendNotificationToAllUsers(payload);
 
@@ -87,10 +90,11 @@ const sendNewNewsNotification = async (newsData, targetUsers = null) => {
       body: newsData.title || 'नई खबर प्रकाशित हुई है',
       type: 'new_news',
       id: newsData._id?.toString() || '',
-      url: `/news/${newsData._id}`,
+      url: `/category/${newsData.categorySlug || newsData.category || 'other'}`, // Open category page
       data: {
         newsId: newsData._id?.toString() || '',
         category: newsData.category || '',
+        categorySlug: newsData.categorySlug || newsData.category || 'other',
         district: newsData.district || '',
         priority: 'normal',
         image: imageUrl,
@@ -99,6 +103,8 @@ const sendNewNewsNotification = async (newsData, targetUsers = null) => {
     };
 
     console.log('📤 [NEWS DEBUG] FCM Payload data.image:', payload.data.image);
+    console.log('📤 [NEWS DEBUG] Category URL:', payload.url);
+    console.log('📤 [NEWS DEBUG] Category slug:', payload.data.categorySlug);
 
     if (targetUsers) {
       // Send to specific users

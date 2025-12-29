@@ -12,10 +12,16 @@ import { uploadMedia } from '../../middlewares/upload.js';
 
 const router = express.Router();
 
+// Configure multer to accept both thumbnail and media files
+const uploadFields = uploadMedia.fields([
+  { name: 'thumbnailFile', maxCount: 1 },
+  { name: 'mediaFile', maxCount: 1 }
+]);
+
 router.get('/', getAllNews);
 router.get('/:id', getNewsById);
-router.post('/', uploadMedia.single('media'), createNews);
-router.put('/:id', uploadMedia.single('media'), updateNews);
+router.post('/', uploadFields, createNews);
+router.put('/:id', uploadFields, updateNews);
 router.delete('/:id', deleteNews);
 router.delete('/bulk-delete', bulkDeleteNews);
 

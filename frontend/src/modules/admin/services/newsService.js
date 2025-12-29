@@ -105,19 +105,24 @@ export const createNews = async (newsData) => {
   try {
     const token = getAuthToken();
     const formData = new FormData();
-    
-    // Append all fields except file
+
+    // Append all fields except files
     Object.keys(newsData).forEach(key => {
-      if (key !== 'mediaFile' && key !== 'featuredImageFile' && key !== 'videoFile') {
+      if (key !== 'thumbnailFile' && key !== 'mediaFile' && key !== 'featuredImageFile' && key !== 'videoFile') {
         if (newsData[key] !== null && newsData[key] !== undefined) {
           formData.append(key, newsData[key]);
         }
       }
     });
-    
-    // Append media file if provided
+
+    // Append thumbnail file if provided (mandatory)
+    if (newsData.thumbnailFile) {
+      formData.append('thumbnailFile', newsData.thumbnailFile);
+    }
+
+    // Append media file if provided (optional)
     if (newsData.mediaFile) {
-      formData.append('media', newsData.mediaFile);
+      formData.append('mediaFile', newsData.mediaFile);
     }
     
       const response = await fetch(`${API_BASE_URL}/admin/news`, {
@@ -150,19 +155,24 @@ export const updateNews = async (id, newsData) => {
   try {
     const token = getAuthToken();
     const formData = new FormData();
-    
-    // Append all fields except file
+
+    // Append all fields except files
     Object.keys(newsData).forEach(key => {
-      if (key !== 'mediaFile' && key !== 'featuredImageFile' && key !== 'videoFile') {
+      if (key !== 'thumbnailFile' && key !== 'mediaFile' && key !== 'featuredImageFile' && key !== 'videoFile') {
         if (newsData[key] !== null && newsData[key] !== undefined) {
           formData.append(key, newsData[key]);
         }
       }
     });
-    
-    // Append media file if provided
+
+    // Append thumbnail file if provided (mandatory)
+    if (newsData.thumbnailFile) {
+      formData.append('thumbnailFile', newsData.thumbnailFile);
+    }
+
+    // Append media file if provided (optional)
     if (newsData.mediaFile) {
-      formData.append('media', newsData.mediaFile);
+      formData.append('mediaFile', newsData.mediaFile);
     }
     
       const response = await fetch(`${API_BASE_URL}/admin/news/${id}`, {

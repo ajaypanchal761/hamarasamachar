@@ -82,11 +82,20 @@ self.addEventListener('notificationclick', (event) => {
   const notificationData = event.notification.data || {};
   let url = '/'; // Default fallback
 
+  console.log('🔔 [SW] Notification clicked, data:', notificationData);
+  console.log('🔔 [SW] Notification type:', notificationData.type);
+
   // Determine URL based on notification type and data
   switch (notificationData.type) {
     case 'breaking_news':
     case 'new_news':
-      url = notificationData.url || `/news/${notificationData.newsId || notificationData.id}`;
+      // For category-based navigation, use the URL provided in payload
+      // This will be /category/{categorySlug} instead of /news/{id}
+      url = notificationData.url;
+      console.log('🔔 [SW] Category notification URL:', url);
+      console.log('🔔 [SW] Notification type:', notificationData.type);
+      console.log('🔔 [SW] Category slug:', notificationData.categorySlug || notificationData.data?.categorySlug);
+      console.log('🔔 [SW] Full notification data:', notificationData);
       break;
     case 'new_epaper':
       url = notificationData.url || '/epaper';
@@ -97,6 +106,8 @@ self.addEventListener('notificationclick', (event) => {
     default:
       url = notificationData.url || notificationData.link || '/';
   }
+
+  console.log('🔔 [SW] Final URL to open:', url);
 
   // Handle action clicks
   if (event.action === 'view') {
