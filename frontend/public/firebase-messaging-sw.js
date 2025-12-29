@@ -21,12 +21,17 @@ const messaging = firebase.messaging();
 
 // Handle background messages
 messaging.onBackgroundMessage((payload) => {
+  console.log('📱 [SW] Background message received:', payload);
+  console.log('📱 [SW] Image URL in payload:', payload.data?.image);
+
   const notificationTitle = payload.notification?.title || payload.data?.title || 'हमारा समाचार';
+
+  // Enhanced image handling for service worker
+  const imageUrl = payload.data?.image;
   const notificationOptions = {
     body: payload.notification?.body || payload.data?.body || 'नई अधिसूचना',
-    icon: payload.data?.image || '/favicon.png',
+    icon: imageUrl || '/favicon.png', // Use news image as primary icon
     badge: '/favicon.png',
-    image: payload.data?.image || undefined, // Add rich notification image
     data: payload.data || {},
     tag: payload.data?.id || 'general', // Prevents duplicate notifications
     requireInteraction: false, // Auto-close notification
@@ -42,6 +47,29 @@ messaging.onBackgroundMessage((payload) => {
       }
     ]
   };
+
+  // Add rich notification image for supported browsers
+  if (imageUrl && self.registration && 'showNotification' in self.registration) {
+    try {
+      // Test if browser supports rich notifications
+      const testNotification = new Notification('test', { image: imageUrl });
+      testNotification.close();
+
+      notificationOptions.image = imageUrl;
+      console.log('🖼️ [SW] Rich notification image supported and added:', imageUrl);
+    } catch (e) {
+      console.log('⚠️ [SW] Rich notification images not supported, using icon only');
+    }
+  }
+
+  // Log notification details
+  console.log('🔔 [SW] Showing notification:', notificationTitle);
+  console.log('🔔 [SW] Notification options:', {
+    hasImage: !!notificationOptions.image,
+    imageUrl: notificationOptions.image,
+    icon: notificationOptions.icon,
+    body: notificationOptions.body
+  });
 
   // Show notification
   return self.registration.showNotification(notificationTitle, notificationOptions);

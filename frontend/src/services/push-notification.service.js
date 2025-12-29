@@ -126,24 +126,52 @@ export const setupForegroundNotificationHandler = (callback) => {
     // Show browser notification when app is in foreground
     if (Notification.permission === 'granted') {
       console.log('🔔 [NOTIFICATION] Creating browser notification');
+      console.log('🔔 [NOTIFICATION] Browser:', navigator.userAgent);
+      console.log('🔔 [NOTIFICATION] Notification support:', 'Notification' in window);
+      console.log('🔔 [NOTIFICATION] Image support:', 'image' in Notification.prototype);
 
-      const notification = new Notification(
-        payload.notification?.title || 'हमारा समाचार',
-        {
-          body: payload.notification?.body || 'नई अधिसूचना',
-          icon: payload.data?.image || '/favicon.png',
-          badge: '/favicon.png',
-          image: payload.data?.image || undefined, // For rich notifications with image
-          data: payload.data || {},
-          tag: payload.data?.id || 'general', // Prevents duplicate notifications
-          requireInteraction: true, // Keep notification visible until user interacts
-          silent: false
-        }
-      );
+      // Enhanced image handling for better browser support
+      const imageUrl = payload.data?.image;
+      console.log('🖼️ [NOTIFICATION] Image URL from payload:', imageUrl);
+
+      const notificationOptions = {
+        body: payload.notification?.body || 'नई अधिसूचना',
+        icon: imageUrl || '/favicon.png', // Use news image as icon if available
+        badge: '/favicon.png',
+        data: payload.data || {},
+        tag: payload.data?.id || 'general', // Prevents duplicate notifications
+        requireInteraction: true, // Keep notification visible until user interacts
+        silent: false
+      };
+
+      // Add image property only for supported browsers (Chrome, Edge)
+      if (imageUrl && ('image' in Notification.prototype)) {
+        notificationOptions.image = imageUrl;
+        console.log('✅ [NOTIFICATION] Rich notification image added:', imageUrl);
+      } else if (imageUrl) {
+        console.log('⚠️ [NOTIFICATION] Browser does not support rich notification images, using icon only');
+        console.log('ℹ️ [NOTIFICATION] Supported browsers: Chrome 56+, Edge 79+, Opera 43+');
+      } else {
+        console.log('ℹ️ [NOTIFICATION] No image URL provided, using default icon');
+      }
+
+      try {
+        const notification = new Notification(
+          payload.notification?.title || 'हमारा समाचार',
+          notificationOptions
+        );
+        console.log('✅ [NOTIFICATION] Notification created successfully');
+      } catch (error) {
+        console.error('❌ [NOTIFICATION] Error creating notification:', error);
+      }
 
       notification.onclick = () => {
         console.log('🖱️ [NOTIFICATION] Notification clicked');
+        console.log('🖱️ [NOTIFICATION] Notification data:', payload.data);
+        console.log('🖱️ [NOTIFICATION] Image used:', payload.data?.image || '/favicon.png');
+
         notification.close();
+
         // Handle navigation based on notification type
         const notificationData = payload.data || {};
         let url = '/'; // Default fallback
@@ -153,18 +181,28 @@ export const setupForegroundNotificationHandler = (callback) => {
           case 'breaking_news':
           case 'new_news':
             url = notificationData.url || `/news/${notificationData.newsId || notificationData.id}`;
+            console.log('🖱️ [NOTIFICATION] Navigating to news:', url);
             break;
           case 'new_epaper':
             url = notificationData.url || '/epaper';
+            console.log('🖱️ [NOTIFICATION] Navigating to epaper:', url);
             break;
           case 'message':
             url = notificationData.url || `/chat/${notificationData.conversationId || notificationData.userId}`;
+            console.log('🖱️ [NOTIFICATION] Navigating to chat:', url);
             break;
           default:
             url = notificationData.url || notificationData.link || '/';
+            console.log('🖱️ [NOTIFICATION] Navigating to default:', url);
         }
 
-        window.open(url, '_blank');
+        try {
+          window.open(url, '_blank');
+        } catch (error) {
+          console.error('❌ [NOTIFICATION] Error opening URL:', error);
+          // Fallback navigation
+          window.location.href = url;
+        }
       };
 
       // Auto-close notification after 10 seconds if not interacted with
