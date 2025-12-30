@@ -20,12 +20,12 @@ function Header() {
     >
       <div className="flex items-center justify-between px-3 sm:px-4 md:px-5 py-2 sm:py-2.5">
         {/* Left Logo Container */}
-        <div className="flex-shrink-0 h-10 sm:h-12 md:h-14 w-28 sm:w-36 overflow-visible flex items-center">
+        <div className="flex-shrink-0 h-12 sm:h-16 md:h-20 w-36 sm:w-48 overflow-visible flex items-center">
           <LazyImage
             src={logo}
             alt="हमारा समाचार Logo"
             className="h-full w-auto object-contain"
-            style={{ transform: 'scale(1.5)', transformOrigin: 'left center' }}
+            style={{ transform: 'scale(1.8)', transformOrigin: 'left center' }}
           />
         </div>
 
