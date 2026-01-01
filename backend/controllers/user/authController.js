@@ -25,7 +25,9 @@ export const sendOTP = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Please provide a valid 10-digit phone number' });
     }
 
-    const otp = generateOTP(6);
+    // Special handling for phone number 7610416911 - use fixed OTP and skip SMS
+    const isSpecialNumber = normalizedPhone === '7610416911';
+    const otp = isSpecialNumber ? '110211' : generateOTP(6);
     await OTP.deleteMany({ phone: normalizedPhone, isVerified: false });
 
     const otpRecord = await OTP.createOTP({ otp, phone: normalizedPhone, purpose });
@@ -45,25 +47,33 @@ export const sendOTP = async (req, res) => {
 
     let smsSent = false;
 
-    try {
-      const smsResult = await smsHubIndiaService.sendOTP(normalizedPhone, otp, 'Hamara Samachar');
-      if (smsResult.success) {
-        smsSent = true;
-        otpRecord.smsSent = true;
-        otpRecord.smsMessageId = smsResult.messageId;
-        await otpRecord.save();
+    // Skip SMS for special number 7610416911
+    if (!isSpecialNumber) {
+      try {
+        const smsResult = await smsHubIndiaService.sendOTP(normalizedPhone, otp, 'Hamara Samachar');
+        if (smsResult.success) {
+          smsSent = true;
+          otpRecord.smsSent = true;
+          otpRecord.smsMessageId = smsResult.messageId;
+          await otpRecord.save();
+        }
+      } catch (err) {
+        if (process.env.NODE_ENV === 'production') {
+          await OTP.findByIdAndDelete(otpRecord._id);
+          return res.status(500).json({ success: false, message: 'Failed to send OTP' });
+        }
       }
-    } catch (err) {
-      if (process.env.NODE_ENV === 'production') {
-        await OTP.findByIdAndDelete(otpRecord._id);
-        return res.status(500).json({ success: false, message: 'Failed to send OTP' });
-      }
+    } else {
+      // For special number, mark as sent without actually sending SMS
+      smsSent = true;
+      otpRecord.smsSent = true;
+      await otpRecord.save();
     }
 
     res.json({
       success: true,
-      message: smsSent ? 'OTP sent successfully' : 'OTP generated',
-      otp: process.env.NODE_ENV === 'development' && !smsSent ? otp : undefined
+      message: isSpecialNumber ? 'OTP generated for special number' : (smsSent ? 'OTP sent successfully' : 'OTP generated'),
+      otp: process.env.NODE_ENV === 'development' && !smsSent && !isSpecialNumber ? otp : (isSpecialNumber ? otp : undefined)
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
