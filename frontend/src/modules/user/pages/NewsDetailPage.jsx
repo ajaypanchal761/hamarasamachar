@@ -84,6 +84,13 @@ function NewsDetailPage() {
         const newsData = await fetchNewsById(id);
         if (newsData) {
           setNews(newsData);
+          // Debug: Check if metaDescription is present
+          console.log('News data loaded:', {
+            hasMetaDescription: !!newsData.metaDescription,
+            metaDescription: newsData.metaDescription,
+            description: newsData.description,
+            tags: newsData.tags
+          });
         } else {
           setError('समाचार नहीं मिला');
         }
@@ -680,12 +687,34 @@ function NewsDetailPage() {
           </div>
 
           {/* Meta Description (SEO Description) - Display if available */}
-          {news.metaDescription && (
+          {news.metaDescription && news.metaDescription.trim() && (
             <div className="mb-4 sm:mb-5">
               <div className="bg-gray-50 border-l-4 border-[#E21E26] p-3 sm:p-4 rounded-r-lg">
                 <p className="text-sm sm:text-base text-gray-700 leading-relaxed">
                   {news.metaDescription}
                 </p>
+              </div>
+            </div>
+          )}
+
+          {/* Tags - Display if available */}
+          {news.tags && Array.isArray(news.tags) && news.tags.length > 0 && (
+            <div className="mb-4 sm:mb-5">
+              <div className="flex flex-wrap gap-2">
+                <span className="text-sm font-medium text-gray-600 mr-2">टैग्स:</span>
+                {news.tags.map((tag, index) => (
+                  <span
+                    key={index}
+                    className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-[#E21E26]/10 text-[#E21E26] border border-[#E21E26]/20 hover:bg-[#E21E26]/20 transition-colors cursor-pointer"
+                    onClick={() => {
+                      // Navigate to category or search with this tag
+                      // For now, just show a toast that this feature will be implemented
+                      showToast(`टैग: ${tag} पर खोज शुरू की जाएगी`, 'info');
+                    }}
+                  >
+                    #{tag}
+                  </span>
+                ))}
               </div>
             </div>
           )}

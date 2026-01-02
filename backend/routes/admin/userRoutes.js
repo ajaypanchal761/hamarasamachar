@@ -20,9 +20,9 @@ router.get('/stats', getUserStats);
 router.get('/:id', getUserById);
 router.put('/:id', updateUser);
 router.patch('/:id/status', updateUserStatus);
-router.delete('/:id', deleteUser);
 router.patch('/bulk-status', bulkUpdateStatus);
 router.delete('/bulk-delete', bulkDelete);
+router.delete('/:id', deleteUser);
 
 export default router;
 

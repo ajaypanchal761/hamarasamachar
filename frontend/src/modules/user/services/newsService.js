@@ -38,6 +38,7 @@ const transformNewsData = (newsArray) => {
     subtitle: news.subtitle || '',
     subtitleText: news.subtitleText || news.metaDescription || news.description || news.excerpt || '',
     description: news.metaDescription || news.description || news.excerpt || '',
+    metaDescription: news.metaDescription || '',
     content: news.content || '',
     author: news.author?.name || news.author || 'रिपोर्टर',
     date: news.publishDate ? new Date(news.publishDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
@@ -256,6 +257,29 @@ export const getBanners = async (position, category = null) => {
     return data.data || [];
   } catch (error) {
     console.error('Get banners error:', error);
+    return []; // Return empty array on error
+  }
+};
+
+// Get available districts (districts that have news)
+export const getAvailableDistricts = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/user/news/districts`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return []; // Return empty array if no districts
+    }
+
+    return data.data || [];
+  } catch (error) {
+    console.error('Get districts error:', error);
     return []; // Return empty array on error
   }
 };

@@ -8,28 +8,28 @@ function ContactPage() {
     {
       name: 'रामनिवास मंडोलिया',
       designation: 'मुख्य संपादक',
-      phone: '9461162346',
+      phone: '+91-9461162346',
       englishName: 'Ramniwas Mandoliya',
       englishDesignation: 'Chief Editor'
     },
     {
       name: 'मुजफ्फर अली',
       designation: 'सहायक संपादक',
-      phone: '9461845696',
+      phone: '+91-9461845696',
       englishName: 'Muzaffar Ali',
       englishDesignation: 'Associate Editor'
     },
     {
       name: 'विवेक सिंह जादौन',
       designation: 'प्रबंध संपादक',
-      phone: '9782486305',
+      phone: '+91-9782486305',
       englishName: 'Vivek Singh Jadon',
       englishDesignation: 'Managing Editor'
     },
     {
       name: 'दिव्या शेखावत',
       designation: 'डिजिटल हेड',
-      phone: '9549857213',
+      phone: '+91-9549857213',
       englishName: 'Divya Shekhawat',
       englishDesignation: 'Digital Head'
     }

@@ -161,3 +161,29 @@ export const getBanners = async (req, res) => {
     });
   }
 };
+
+// @desc    Get available districts (districts that have news)
+// @route   GET /api/user/news/districts
+// @access  Public
+export const getAvailableDistricts = async (req, res) => {
+  try {
+    // Get all distinct districts that have published news
+    const districts = await News.distinct('district', {
+      status: 'published',
+      district: { $exists: true, $ne: '' }
+    });
+
+    // Sort districts and add 'सभी जिले' at the beginning
+    const sortedDistricts = ['सभी जिले', ...districts.sort()];
+
+    res.json({
+      success: true,
+      data: sortedDistricts
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};

@@ -1,6 +1,21 @@
-import { RAJASTHAN_DISTRICTS } from '../constants/districts';
+import { useState, useEffect } from 'react';
+import { getAvailableDistricts } from '../services/newsService';
 
 function DistrictFilter({ selectedDistrict, onDistrictChange }) {
+  const [availableDistricts, setAvailableDistricts] = useState([]);
+
+  useEffect(() => {
+    const loadDistricts = async () => {
+      const districts = await getAvailableDistricts();
+      setAvailableDistricts(districts);
+    };
+
+    loadDistricts();
+  }, []);
+
+  // Show loading or default state if no districts loaded yet
+  const districtsToShow = availableDistricts.length > 0 ? availableDistricts : ['सभी जिले'];
+
   return (
     <div className="px-4 sm:px-5 md:px-6 lg:px-8 py-3 sm:py-4 bg-gray-50 border-b border-gray-200">
       <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto pb-2">
@@ -8,7 +23,7 @@ function DistrictFilter({ selectedDistrict, onDistrictChange }) {
           किस जिले की खबर चाहिए?
         </span>
         <div className="flex gap-2 sm:gap-3">
-          {RAJASTHAN_DISTRICTS.map((district) => (
+          {districtsToShow.map((district) => (
             <button
               key={district}
               onClick={() => onDistrictChange(district)}

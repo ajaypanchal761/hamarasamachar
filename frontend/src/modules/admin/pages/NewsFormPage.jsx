@@ -4,6 +4,7 @@ import Layout from '../components/Layout';
 import Form from '../components/Form';
 import TipTapEditor from '../components/TipTapEditor';
 import { COLORS } from '../constants/colors';
+import { RAJASTHAN_DISTRICTS } from '../constants/districts';
 import { useToast } from '../hooks/useToast';
 import { useConfirm } from '../hooks/useConfirm';
 import Toast from '../components/Toast';
@@ -546,9 +547,16 @@ function NewsFormPage() {
                                             <Form.Field
                                                 label="जिला (District)"
                                                 name="district"
+                                                type="select"
                                                 value={formData.district}
                                                 onChange={handleChange}
-                                                placeholder="जिला नाम दर्ज करें"
+                                                options={[
+                                                    { value: '', label: 'जिला चुनें' },
+                                                    ...RAJASTHAN_DISTRICTS.slice(1).map(district => ({
+                                                        value: district,
+                                                        label: district
+                                                    }))
+                                                ]}
                                             />
                                         )}
 

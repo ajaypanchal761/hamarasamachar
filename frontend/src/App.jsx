@@ -52,15 +52,15 @@ import TermsAndConditionsPage from './modules/user/pages/TermsAndConditionsPage'
 function AppRoutes() {
   const { isAuthenticated, loading } = useUserAuth();
 
-  // If we have stored auth data and loading is true, redirect immediately
+  // If we have stored auth data and loading is true, show loading screen
   // This prevents showing the splash page for already logged-in users
   const hasStoredAuth = localStorage.getItem('userToken') && localStorage.getItem('userData');
 
   if (hasStoredAuth && loading) {
     return (
-      <Routes>
-        <Route path="*" element={<Navigate to="/user" replace />} />
-      </Routes>
+      <div className="fixed inset-0 flex flex-col items-center justify-center overflow-hidden bg-white" style={{ height: '100dvh' }}>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"></div>
+      </div>
     );
   }
 

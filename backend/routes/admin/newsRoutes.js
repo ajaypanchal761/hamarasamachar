@@ -22,8 +22,8 @@ router.get('/', getAllNews);
 router.get('/:id', getNewsById);
 router.post('/', uploadFields, createNews);
 router.put('/:id', uploadFields, updateNews);
-router.delete('/:id', deleteNews);
 router.delete('/bulk-delete', bulkDeleteNews);
+router.delete('/:id', deleteNews);
 
 export default router;
 
