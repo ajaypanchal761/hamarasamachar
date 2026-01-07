@@ -5,8 +5,8 @@
   "main": "server.js",
   "type": "module",
   "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js",
+    "start": "node init && node server.js",
+    "dev": "node init && nodemon server.js",
     "migrate-user-ids": "node scripts/migrateUserIds.js",
     "fix-category-slugs": "node scripts/fixCategorySlugs.js",
     "reset-admin-password": "node scripts/resetAdminPassword.js",
