@@ -19,25 +19,21 @@ function ContactPage() {
       englishName: 'Muzaffar Ali',
       englishDesignation: 'Associate Editor'
     },
-    {
-      name: 'विवेक सिंह जादौन',
-      designation: 'प्रबंध संपादक',
-      phone: '+91-9782486305',
-      englishName: 'Vivek Singh Jadon',
-      englishDesignation: 'Managing Editor'
-    },
-    {
-      name: 'दिव्या शेखावत',
-      designation: 'डिजिटल हेड',
-      phone: '+91-9549857213',
-      englishName: 'Divya Shekhawat',
-      englishDesignation: 'Digital Head'
-    }
+    // {
+    //   name: 'विवेक सिंह जादौन',
+    //   designation: 'प्रबंध संपादक',
+    //   phone: '+91-9782486305',
+    //   englishName: 'Vivek Singh Jadon',
+    //   englishDesignation: 'Managing Editor'
+    // },
+    // {
+    //   name: 'दिव्या शेखावत',
+    //   designation: 'डिजिटल हेड',
+    //   phone: '+91-9549857213',
+    //   englishName: 'Divya Shekhawat',
+    //   englishDesignation: 'Digital Head'
+    // }
   ];
-
-  const handlePhoneClick = (phone) => {
-    window.location.href = `tel:${phone}`;
-  };
 
   const handleEmailClick = () => {
     window.location.href = 'mailto:hamarasamachar02@gmail.com';
@@ -93,27 +89,16 @@ function ContactPage() {
                   key={index}
                   className="bg-white border border-gray-200 rounded-lg p-4 sm:p-5 hover:shadow-md transition-shadow"
                 >
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
-                    <div className="flex-1">
-                      <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-1">
-                        {member.name}
-                      </h3>
-                      <p className="text-sm sm:text-base text-gray-600 mb-1">
-                        {member.designation}
-                      </p>
-                      <p className="text-xs sm:text-sm text-gray-500">
-                        {member.englishName} - {member.englishDesignation}
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => handlePhoneClick(member.phone)}
-                      className="flex items-center gap-2 px-4 py-2 bg-[#E21E26] text-white rounded-lg hover:bg-[#C21A20] transition-colors text-sm sm:text-base font-medium"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                      </svg>
-                      <span>{member.phone}</span>
-                    </button>
+                  <div>
+                    <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-1">
+                      {member.name}
+                    </h3>
+                    <p className="text-sm sm:text-base text-gray-600 mb-1">
+                      {member.designation}
+                    </p>
+                    <p className="text-xs sm:text-sm text-gray-500">
+                      {member.englishName} - {member.englishDesignation}
+                    </p>
                   </div>
                 </div>
               ))}

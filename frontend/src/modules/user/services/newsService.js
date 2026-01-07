@@ -261,10 +261,15 @@ export const getBanners = async (position, category = null) => {
   }
 };
 
-// Get available districts (districts that have news)
-export const getAvailableDistricts = async () => {
+// Get available districts (districts that have news or all districts for specific categories)
+export const getAvailableDistricts = async (category = null) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/user/news/districts`, {
+    const params = new URLSearchParams();
+    if (category) {
+      params.append('category', category);
+    }
+
+    const response = await fetch(`${API_BASE_URL}/user/news/districts?${params.toString()}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
