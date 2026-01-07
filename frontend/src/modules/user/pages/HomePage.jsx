@@ -297,6 +297,7 @@ function HomePage() {
           <DistrictFilter
             selectedDistrict={selectedDistrict}
             onDistrictChange={handleDistrictChange}
+            category={selectedCategory}
           />
         )}
 

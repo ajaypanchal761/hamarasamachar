@@ -1,17 +1,17 @@
 import { useState, useEffect } from 'react';
 import { getAvailableDistricts } from '../services/newsService';
 
-function DistrictFilter({ selectedDistrict, onDistrictChange }) {
+function DistrictFilter({ selectedDistrict, onDistrictChange, category }) {
   const [availableDistricts, setAvailableDistricts] = useState([]);
 
   useEffect(() => {
     const loadDistricts = async () => {
-      const districts = await getAvailableDistricts();
+      const districts = await getAvailableDistricts(category);
       setAvailableDistricts(districts);
     };
 
     loadDistricts();
-  }, []);
+  }, [category]);
 
   // Show loading or default state if no districts loaded yet
   const districtsToShow = availableDistricts.length > 0 ? availableDistricts : ['सभी जिले'];

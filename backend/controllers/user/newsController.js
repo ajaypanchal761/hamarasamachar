@@ -162,12 +162,33 @@ export const getBanners = async (req, res) => {
   }
 };
 
-// @desc    Get available districts (districts that have news)
+// @desc    Get available districts (districts that have news or all districts for specific categories)
 // @route   GET /api/user/news/districts
 // @access  Public
 export const getAvailableDistricts = async (req, res) => {
   try {
-    // Get all distinct districts that have published news
+    const { category } = req.query;
+
+    // If category is Rajasthan, return all Rajasthan districts regardless of news availability
+    if (category === 'राजस्थान' || category === 'rajasthan') {
+      const allRajasthanDistricts = [
+        'अजमेर', 'अलवर', 'बांसवाड़ा', 'बाड़मेर', 'भरतपुर', 'भीलवाड़ा', 'बीकानेर',
+        'बूंदी', 'चित्तौड़गढ़', 'चूरू', 'दौसा', 'धौलपुर', 'डूंगरपुर', 'हनुमानगढ़',
+        'जयपुर', 'जैसलमेर', 'जालौर', 'झालावाड़', 'झुंझुनूं', 'जोधपुर', 'करौली',
+        'कोटा', 'नागौर', 'पाली', 'प्रतापगढ़', 'राजसमंद', 'सवाई माधोपुर', 'सीकर',
+        'सिरोही', 'टोंक', 'उदयपुर', 'श्रीगंगानगर'
+      ];
+
+      // Sort districts and add 'सभी जिले' at the beginning
+      const sortedDistricts = ['सभी जिले', ...allRajasthanDistricts.sort()];
+
+      return res.json({
+        success: true,
+        data: sortedDistricts
+      });
+    }
+
+    // For other categories, get districts that have published news
     const districts = await News.distinct('district', {
       status: 'published',
       district: { $exists: true, $ne: '' }

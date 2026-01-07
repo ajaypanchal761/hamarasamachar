@@ -12,7 +12,7 @@ const router = express.Router();
 
 router.get('/', optionalUserAuth, getAllNews);
 router.get('/breaking', getBreakingNews);
-router.get('/districts', getAvailableDistricts);
+router.get('/districts', optionalUserAuth, getAvailableDistricts);
 router.get('/:id', optionalUserAuth, getNewsById);
 router.get('/banners/:position', getBanners);
 
